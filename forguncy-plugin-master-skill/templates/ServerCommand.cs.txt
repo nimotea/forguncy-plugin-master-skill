@@ -8,7 +8,7 @@ namespace MyPluginNamespace
     [Icon("pack://application:,,,/MyPluginNamespace;component/Resources/Icon.png")]
     public class MyServerCommand : Command
     {
-        [DisplayName("Sample Property")]
+        [DisplayName("示例属性")]
         [FormulaProperty]
         public object SampleProperty { get; set; }
 

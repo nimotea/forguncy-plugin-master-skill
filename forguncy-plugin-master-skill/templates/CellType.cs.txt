@@ -8,12 +8,12 @@ namespace MyPluginNamespace
     [Icon("pack://application:,,,/MyPluginNamespace;component/Resources/Icon.png")]
     public class MyCellType : CellType
     {
-        [DisplayName("My Option")]
+        [DisplayName("我的选项")]
         public string MyOption { get; set; }
 
         public override string ToString()
         {
-            return "My Custom Cell";
+            return "我的自定义单元格";
         }
     }
 }

@@ -7,7 +7,7 @@ namespace MyPluginNamespace
     [Icon("pack://application:,,,/MyPluginNamespace;component/Resources/Icon.png")]
     public class MyClientCommand : Command
     {
-        [DisplayName("Alert Message")]
+        [DisplayName("提示消息")]
         public string Message { get; set; }
 
         public override string GetExecuteJavaScript()
