@@ -65,8 +65,12 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 - 确保代码符合生产环境标准（Production-Ready）。
 
 ### 4. 规范审查与代码生成
-- **文档对照**：确保代码遵守 `docs/SDK_BestPractices.md` 中的规范（如 `IGenerateContext` 的使用、数据访问安全）。
-- **API 检查**：对照 `docs/API_Cheatsheet.md` 验证 API 调用是否正确。
+- **文档对照**：
+    - 基础规范：`docs/SDK_BestPractices.md`
+    - API 速查：`docs/API_Cheatsheet.md`
+    - 详细参考：`docs/references/<Type>/README.md` (根据开发类型选择)
+    - 属性特性：`docs/Property_Attributes_Reference.md`
+    - 自定义编辑器：`docs/Custom_Editors_Guide.md`
 - **强制规则**：
     - **返回类型**：`Execute` 方法必须返回 `ExecutionResult`。
     - **属性显示**：所有暴露给设计器的属性必须带 `[DisplayName]`。
