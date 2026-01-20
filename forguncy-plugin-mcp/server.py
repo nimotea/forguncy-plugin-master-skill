@@ -20,17 +20,7 @@ def _ensure_base_dir():
         raise FileNotFoundError(f"Base directory not found at {BASE_DIR}")
 
 # Tool Input Models
-class ReadDocInput(BaseModel):
-    path: str = Field(..., description="Relative path to the document within docs/ folder (e.g. 'SOP.md' or 'references/CellType/Basic_Structure.md')")
-
-class ReadTemplateInput(BaseModel):
-    filename: str = Field(..., description="Filename of the template (e.g. 'CellType.cs.txt')")
-
-class SearchDocsInput(BaseModel):
-    query: str = Field(..., description="Keywords to search in documentation (e.g. 'DataAccess', 'Formula', 'ListView')")
-
-class GetContextInput(BaseModel):
-    plugin_type: str = Field(..., description="Type of plugin to get context for. Options: 'ServerCommand', 'CellType', 'ClientCommand', 'ServerApi', 'Middleware'")
+# Models removed in favor of direct parameters for better compatibility
 
 # Tools
 
@@ -80,10 +70,10 @@ def list_docs() -> str:
         "description": "Reads the content of a specific documentation file."
     }
 )
-def read_doc(params: ReadDocInput) -> str:
+def read_doc(path: str = Field(..., description="Relative path to the document within docs/ folder (e.g. 'SOP.md' or 'references/CellType/Basic_Structure.md')")) -> str:
     """Reads the content of a specific documentation file."""
     _ensure_base_dir()
-    file_path = DOCS_DIR / params.path
+    file_path = DOCS_DIR / path
     
     # Security check: ensure path is within DOCS_DIR
     try:
@@ -92,7 +82,7 @@ def read_doc(params: ReadDocInput) -> str:
         return "Error: Invalid file path. Must be within docs directory."
         
     if not file_path.exists():
-        return f"Error: File '{params.path}' not found."
+        return f"Error: File '{path}' not found."
         
     return file_path.read_text(encoding="utf-8")
 
@@ -121,10 +111,10 @@ def list_templates() -> str:
         "description": "Reads the content of a specific code template."
     }
 )
-def read_template(params: ReadTemplateInput) -> str:
+def read_template(filename: str = Field(..., description="Filename of the template (e.g. 'CellType.cs.txt')")) -> str:
     """Reads the content of a specific code template."""
     _ensure_base_dir()
-    file_path = TEMPLATES_DIR / params.filename
+    file_path = TEMPLATES_DIR / filename
     
     # Security check: ensure path is within TEMPLATES_DIR
     try:
@@ -133,7 +123,7 @@ def read_template(params: ReadTemplateInput) -> str:
         return "Error: Invalid file path. Must be within templates directory."
 
     if not file_path.exists():
-        return f"Error: Template '{params.filename}' not found."
+        return f"Error: Template '{filename}' not found."
         
     return file_path.read_text(encoding="utf-8")
 
@@ -145,11 +135,11 @@ def read_template(params: ReadTemplateInput) -> str:
         "description": "Searches for keywords in all documentation files and returns matching snippets."
     }
 )
-def search_docs(params: SearchDocsInput) -> str:
+def search_docs(query: str = Field(..., description="Keywords to search in documentation (e.g. 'DataAccess', 'Formula', 'ListView')")) -> str:
     """Searches for keywords in documentation files."""
     _ensure_base_dir()
     results = []
-    query_lower = params.query.lower()
+    query_lower = query.lower()
     
     for root, _, filenames in os.walk(DOCS_DIR):
         for filename in filenames:
@@ -174,7 +164,7 @@ def search_docs(params: SearchDocsInput) -> str:
                 break
                 
     if not results:
-        return f"No matches found for '{params.query}'."
+        return f"No matches found for '{query}'."
         
     return "\n".join(results)
 
@@ -186,10 +176,10 @@ def search_docs(params: SearchDocsInput) -> str:
         "description": "Returns a curated list of documentation and templates for a specific plugin type (ServerCommand, CellType, etc.)."
     }
 )
-def get_plugin_type_context(params: GetContextInput) -> str:
+def get_plugin_type_context(plugin_type: str = Field(..., description="Type of plugin to get context for. Options: 'ServerCommand', 'CellType', 'ClientCommand', 'ServerApi', 'Middleware'")) -> str:
     """Returns context (doc list, template) for a plugin type."""
     
-    ptype = params.plugin_type
+    ptype = plugin_type
     
     # Define mapping of types to relevant files
     context_map = {
@@ -263,6 +253,8 @@ if __name__ == "__main__":
     
     if args.transport == "sse":
         print(f"Starting SSE server on {args.host}:{args.port}...")
-        mcp.run(transport="sse", port=args.port, host=args.host)
+        mcp.settings.host = args.host
+        mcp.settings.port = args.port
+        mcp.run(transport="sse")
     else:
         mcp.run()
