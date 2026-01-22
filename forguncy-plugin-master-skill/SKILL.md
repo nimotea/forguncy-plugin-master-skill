@@ -16,9 +16,9 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 - 用户需要修复现有插件代码中的错误或进行优化。
 
 ## 知识库与标准流程
-- **核心索引**：`docs/DOC_INDEX.md` (所有开发任务的入口，AI 必须优先检索此文件)
-- **标准作业程序 (SOP)**：`docs/SOP.md` (定义了插件开发的五个标准阶段)
-- **最佳实践**：`docs/SDK_BestPractices.md` (包含 IGenerateContext、DataAccess 和参数安全的关键规则)
+- **核心索引**：`references/DOC_INDEX.md` (所有开发任务的入口，AI 必须优先检索此文件)
+- **标准作业程序 (SOP)**：`references/SOP.md` (定义了插件开发的五个标准阶段)
+- **最佳实践**：`references/SDK_BestPractices.md` (包含 IGenerateContext、DataAccess 和参数安全的关键规则)
 
 ## 关键编码规范 (Critical Coding Standards)
 以下规则必须严格遵守，违反将导致插件不稳定或安全漏洞：
@@ -43,10 +43,10 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 
 ## 指令
 
-请严格遵循 `docs/SOP.md` 定义的流程以及以下步骤来处理用户的请求：
+请严格遵循 `references/SOP.md` 定义的流程以及以下步骤来处理用户的请求：
 
 ### 0. 知识检索 (新增)
-- 在回答任何技术问题或生成代码前，**必须**首先查阅 `docs/DOC_INDEX.md`，找到相关的详细文档路径，并阅读对应文档。
+- 在回答任何技术问题或生成代码前，**必须**首先查阅 `references/DOC_INDEX.md`，找到相关的详细文档路径，并阅读对应文档。
 - 确保生成的代码符合文档中的最新规范。
 
 ### 1. 项目初始化判断 (高优先级 - 对应 SOP 阶段一)
@@ -59,9 +59,9 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
     - ✅ *正确做法*：**必须等待确认**。构建器是 GUI 程序，AI 无法感知用户何时完成点击。必须明确暂停，等待用户反馈“好了”之后，才能继续生成代码。
 
 - **执行步骤**：
-    1.  **准备脚本**：使用 `templates/InitProject.ps1.txt` 作为基础。该模板已内置了常见路径检测逻辑。
+    1.  **准备脚本**：使用 `scripts/init_project.ps1`。该脚本已内置了常见路径检测逻辑。
     2.  **执行动作**：
-        - **推荐**：使用 `RunCommand` 工具直接在终端执行脚本逻辑（可以将脚本内容写入临时文件运行，或直接执行命令块）。
+        - **推荐**：使用 `RunCommand` 工具直接在终端执行脚本：`powershell -File scripts/init_project.ps1`。
     3.  **强制暂停**：
         - 脚本执行成功仅代表“构建器已启动”，**不代表项目已创建**。
         - **严禁**在同一条回复中继续生成后续的业务代码（如 `.cs` 文件）。
@@ -77,19 +77,19 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
             - **关键概念区分**：
                 - **设计器端 (Designer/WPF)**：用户提到“设计器端”时，通常指在活字格设计器中配置属性、预览效果的 C# 逻辑 (如 `GetDesignerPropertyEditorSettings`)。
                 - **运行端 (Runtime/Web)**：用户提到“查看端”或“Web端”时，通常指最终用户在浏览器中看到的 JavaScript 渲染逻辑。
-            - 模板：`templates/CellType.cs.txt`
+            - 模板：`assets/templates/CellType.cs.txt`
         2.  **服务端命令插件 (ServerCommand)**：
             - 用于：后端逻辑处理、数据库操作、文件读写。
-            - 模板：`templates/ServerCommand.cs.txt`
+            - 模板：`assets/templates/ServerCommand.cs.txt`
         3.  **客户端命令插件 (ClientCommand)**：
             - 用于：纯前端逻辑、页面跳转、浏览器 API 调用。
-            - 模板：`templates/ClientCommand.cs.txt`
+            - 模板：`assets/templates/ClientCommand.cs.txt`
         4.  **服务端 API (ServerAPI)**：
             - 用于：提供自定义 HTTP 接口供外部系统调用。
-            - 模板：`templates/ServerApi.cs.txt`
+            - 模板：`assets/templates/ServerApi.cs.txt`
         5.  **自定义中间件 (Middleware)**：
             - 用于：拦截请求、全局异常处理、自定义认证逻辑。
-            - 模板：`templates/Middleware.cs.txt`
+            - 模板：`assets/templates/Middleware.cs.txt`
 
 ### 3. 生成开发计划 (必选 - 覆盖所有需求)
 - **触发场景**：无论是**新功能开发**还是**现有代码整改/重构**，在正式编写代码前，**必须**先生成一份 Markdown 计划文档。
@@ -98,11 +98,11 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
     - **命名规范**：文件名必须清晰反映需求内容和顺序，建议格式：`plans/序号_需求简述.md`（例如 `plans/001_InitQRCode.md`, `plans/002_FixLoginBug.md`）。
 - **内容要求**：
     1.  **需求分析**：明确要解决的问题或实现的功能。
-    2.  **拟用方案/模板**：明确将使用哪个 `templates/` 下的文件，或要修改哪个现有文件。
+    2.  **拟用方案/模板**：明确将使用哪个 `assets/templates/` 下的文件，或要修改哪个现有文件。
     3.  **精准引用 (Critical)**：
-        - 必须列出将参考的 `docs/` 文档。
+        - 必须列出将参考的 `references/` 文档。
         - **格式强制**：使用 Markdown 链接引用 **相对路径**，确保用户可点击跳转。
-        - 示例：`参考文档：[添加字符串属性](../docs/references/ServerCommand/Add_Property_String.md)` (注意相对路径层级)
+        - 示例：`参考文档：[添加字符串属性](../references/ServerCommand/Add_Property_String.md)` (注意相对路径层级)
     4.  **属性/逻辑设计**：规划代码变更点（属性、方法、异常处理等）。
 - **执行**：
     - 将计划文档写入 `plans/` 目录。
@@ -118,10 +118,10 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 
 ### 5. 规范审查与代码生成
 - **文档对照**：
-    - **首选检索**：`docs/DOC_INDEX.md` (查找特定主题)
-    - 基础规范：`docs/SDK_BestPractices.md`
-    - API 速查：`docs/API_Cheatsheet.md`
-    - 详细参考：`docs/references/<Type>/README.md` (根据开发类型选择)
+    - **首选检索**：`references/DOC_INDEX.md` (查找特定主题)
+    - 基础规范：`references/SDK_BestPractices.md`
+    - API 速查：`references/API_Cheatsheet.md`
+    - 详细参考：`references/<Type>/README.md` (根据开发类型选择)
 - **强制规则**：
     - **返回类型**：`Execute` 方法必须返回 `ExecutionResult`。
     - **属性显示**：所有暴露给设计器的属性必须带 `[DisplayName]`。
@@ -139,7 +139,7 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 >
 > **请注意**：为了避免 NuGet 依赖版本冲突，我将尝试为您启动官方构建器。
 >
-> （AI 调用 RunCommand 执行 InitProject.ps1 逻辑...）
+> （AI 调用 RunCommand 执行 scripts/init_project.ps1 逻辑...）
 >
 > 构建器启动成功！请在弹出的窗口中完成项目创建。
 >
