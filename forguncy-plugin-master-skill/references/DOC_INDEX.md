@@ -7,6 +7,7 @@
 *   **SOP 标准流程**: `references/SOP.md`
 *   **最佳实践**: `references/SDK_BestPractices.md`
 *   **API 速查表**: `references/API_Cheatsheet.md`
+*   **项目配置与发布**: `references/Project_Configuration/Plugin_Metadata.md`
 
 ## 2. 插件类型参考 (Plugin Types)
 

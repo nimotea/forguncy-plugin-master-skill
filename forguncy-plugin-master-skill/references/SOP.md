@@ -89,7 +89,14 @@
 
 **目标**：交付最终产物并进行后续维护。
 
-1.  **文档编写**：
+1.  **元数据配置 (关键)**：
+    *   发布前务必完善插件信息（图标、描述、作者、版本）。
+    *   **详细指南**：参见 `references/Project_Configuration/Plugin_Metadata.md`。
+    *   **操作**：直接修改 `.csproj` 文件中的 `<PropertyGroup>` 节点，设置 `<Description>`, `<Authors>`, `<Version>`, `<PackageIcon>` 等属性。
+
+2.  **文档编写**：
     *   编写插件使用说明书，解释各属性的作用和使用示例。
-2.  **版本管理**：
-    *   每次更新前修改 `AssemblyInfo.cs` 或构建器中的版本号。
+
+3.  **版本管理**：
+    *   每次更新前修改 `.csproj` 中的 `<Version>` 标签。
+    *   遵循语义化版本规范 (X.Y.Z)。

@@ -1,18 +1,19 @@
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using GrapeCity.Forguncy.ServerApi;
+using GrapeCity.Forguncy.Commands;
+using GrapeCity.Forguncy.Plugin;
 
 namespace MyPluginNamespace
 {
     [Icon("pack://application:,,,/MyPluginNamespace;component/Resources/Icon.png")]
-    public class MyServerCommand : Command
+    public class MyServerCommand : Command, ICommandExecutableInServerSideAsync
     {
         [DisplayName("示例属性")]
         [FormulaProperty]
         public object SampleProperty { get; set; }
 
-        public override async Task<ExecutionResult> Execute(IGenerateContext context)
+        public async Task<ExecuteResult> ExecuteAsync(IServerCommandExecuteContext context)
         {
             try
             {
@@ -24,20 +25,39 @@ namespace MyPluginNamespace
                 // Example: string result = DoSomething(value);
 
                 // 3. Return Result
-                return new ExecutionResult
-                {
-                    ResultType = ExecutionResultType.Success,
-                    // Message = "Operation successful" 
-                };
+                return new ExecuteResult();
             }
             catch (Exception ex)
             {
-                return new ExecutionResult
+                return new ExecuteResult
                 {
-                    ResultType = ExecutionResultType.Failure,
                     Message = ex.Message
                 };
             }
         }
+
+        public override string ToString()
+        {
+            return "My Server Command";
+        }
+
+        public override CommandScope GetCommandScope()
+        {
+            return CommandScope.ExecutableInServer;
+        }
+
+        /* 
+        // 示例：动态属性可见性 (Dynamic Property Visibility)
+        // 根据其他属性的值控制某个属性在设计器中是否显示。
+        public override bool GetDesignerPropertyVisible(string propertyName, CommandScope commandScope)
+        {
+            if (propertyName == nameof(SampleProperty))
+            {
+                // return SomeOtherProperty == true; // 仅当 SomeOtherProperty 为 true 时显示
+                return true;
+            }
+            return base.GetDesignerPropertyVisible(propertyName, commandScope);
+        }
+        */
     }
 }
