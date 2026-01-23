@@ -26,7 +26,7 @@
   <!-- 插件描述 -->
   <Description>这是一个功能强大的活字格插件，提供了...功能。</Description>
   <!-- 作者 -->
-  <Authors>GrapeCity</Authors>
+  <Authors>活字格插件大师</Authors>
   <!-- 版本号 -->
   <Version>1.0.0</Version>
   <!-- 产品名 -->
