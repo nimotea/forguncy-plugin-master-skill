@@ -97,11 +97,17 @@
 
 2.  **代码维护与重构 (维护场景)**：
     *   **目标**：针对现有代码进行 API 升级、迁移或逻辑优化。
-    *   **步骤**：
+    *   **常规维护**：
         1.  **定位引用**：使用 `grep` 或 `Find in Files` 全局搜索旧 API 或关键类名（如 `IGenerateContext`）。
         2.  **小步修改**：每次只修改一个文件或一个方法，避免大规模破坏。
         3.  **验证**：修改后立即编译 (`dotnet build`) 并运行单元测试（如有）或手动测试。
-        4.  **提交**：确保功能正常后立即 Git 提交，保持提交粒度细致。
+    *   **结构性重构 (拆分聚合命令)**：
+        *   当需要将一个包含复杂 `switch-case` 逻辑的“聚合命令”拆分为多个独立命令时：
+        1.  **参考指南**：详细步骤请查阅 `references/Refactoring/Aggregated_Command_Split.md`。
+        2.  **分析结构**：识别用于分发的 `Enum` 和所有公共属性。
+        3.  **提取基类**：创建抽象基类 (Base Class)，承载公共属性和逻辑。
+        4.  **拆分子类**：为每个 Case 创建独立子类，迁移对应逻辑。
+        5.  **迁移定义**：务必确保共享的 `Enum` 被移动到公共位置，避免丢失。
     *   **示例 (API 迁移)**：
         *   查找：`grep -r "IGenerateContext" .`
         *   替换：将 `IGenerateContext` 替换为 `IServerCommandExecuteContext`，并同步修改方法签名为 `ExecuteAsync`。

@@ -78,6 +78,11 @@
 
 ## 3. 通用功能与特性
 
+### 3.1 属性与特性
 *   **属性索引**: `references/ServerCommand/Attribute_Index.md`
 *   **搜索支持**: `references/ServerCommand/Attribute_Search.md`
 *   **序列化**: `references/ServerCommand/Attribute_Serialization.md`
+
+### 3.2 重构指南 (Refactoring Guides)
+*   **静态枚举转动态公式**: `references/Refactoring/Static_Enum_To_Dynamic_Formula.md`
+*   **拆分聚合命令**: `references/Refactoring/Aggregated_Command_Split.md`
