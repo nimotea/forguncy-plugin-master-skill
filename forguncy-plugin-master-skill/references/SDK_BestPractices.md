@@ -40,6 +40,18 @@
 - **痛点**：默认的 `ToString()` 实现可能只显示类名，或者被重写为仅显示参数（如 "Value1"），导致用户在查看长长的命令列表时，不知道每个命令到底是什么。
 - **最佳实践**：始终在 `ToString()` 的返回值中包含命令的名称（或 `DisplayName`）。
 - **推荐格式**：`"命令名称: 关键参数描述"`
+- **进阶做法（推荐）**：在基类中提取辅助方法，避免在每个子类中重复编写逻辑。
+  ```csharp
+  protected string FormatDescription(object content, string descriptionPattern = "{0}")
+  {
+      var displayName = this.GetType().GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? this.GetType().Name;
+      if (content == null || string.IsNullOrWhiteSpace(content.ToString())) return displayName;
+      return $"{displayName}: {string.Format(descriptionPattern, content)}";
+  }
+
+  // 子类实现极其简洁
+  public override string ToString() => FormatDescription(Url, "从[={0}]下载");
+  ```
 - **示例**：
   ```csharp
   public override string ToString()

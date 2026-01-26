@@ -15,10 +15,12 @@
 ### 2. 提取抽象基类 (Base Class)
 创建一个继承自 `Command` (或 `ICommandExecutableInServerSideAsync`) 的抽象基类。
 - 将公共属性移入基类。
-- 将公共逻辑（如辅助方法）移入基类。
+- **推荐**：在基类中提供统一的 `ToString` 格式化辅助方法，简化子类实现。
 - 保持 `GetCommandScope()` 等通用配置一致。
 
 ```csharp
+using System.Reflection;
+
 public abstract class MyPluginBaseCommand : Command, ICommandExecutableInServerSideAsync
 {
     [DisplayName("结果存入变量")]
@@ -28,6 +30,25 @@ public abstract class MyPluginBaseCommand : Command, ICommandExecutableInServerS
     public abstract Task<ExecuteResult> ExecuteAsync(IServerCommandExecuteContext context);
 
     public override CommandScope GetCommandScope() => CommandScope.ExecutableInServer;
+
+    /// <summary>
+    /// 统一格式化命令在列表中的显示描述
+    /// </summary>
+    protected string FormatDescription(object content, string descriptionPattern = "{0}")
+    {
+        // 自动获取当前类的 DisplayName
+        var displayName = this.GetType().GetCustomAttribute<DisplayNameAttribute>()?.DisplayName 
+                          ?? this.GetType().Name;
+        
+        if (content == null || string.IsNullOrWhiteSpace(content.ToString()))
+        {
+            return displayName;
+        }
+        
+        // 自动处理 content 的显示格式并拼接前缀
+        var description = string.Format(descriptionPattern, content);
+        return $"{displayName}: {description}";
+    }
 }
 ```
 
