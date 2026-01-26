@@ -10,6 +10,12 @@ namespace MyPluginNamespace
         [DisplayName("提示消息")]
         public string Message { get; set; }
 
+        public override string ToString()
+        {
+            // 在活字格命令列表中显示的名称。建议格式：命令名: 关键参数描述
+            return "我的客户端命令";
+        }
+
         public override string GetExecuteJavaScript()
         {
             // 返回在客户端执行的 JavaScript 代码

@@ -38,7 +38,8 @@ namespace MyPluginNamespace
 
         public override string ToString()
         {
-            return "My Server Command";
+            // 在活字格命令列表中显示的名称。建议格式：命令名: 关键参数描述
+            return "我的服务端命令"; 
         }
 
         public override CommandScope GetCommandScope()

@@ -34,4 +34,19 @@
   // 正确示范
   context.DataAccess.ExecuteNonQuery("SELECT * FROM Users WHERE Name = @Name", new { Name = name });
   ```
-- **类型检查**：在转换类型之前，验证 `EvaluateFormulaAsync` 返回的对象是否为预期类型。
+## 4. 命令显示名称 (ToString 实现)
+活字格设计器在命令列表中显示命令的方式取决于 `ToString()` 方法的返回值。
+
+- **痛点**：默认的 `ToString()` 实现可能只显示类名，或者被重写为仅显示参数（如 "Value1"），导致用户在查看长长的命令列表时，不知道每个命令到底是什么。
+- **最佳实践**：始终在 `ToString()` 的返回值中包含命令的名称（或 `DisplayName`）。
+- **推荐格式**：`"命令名称: 关键参数描述"`
+- **示例**：
+  ```csharp
+  public override string ToString()
+  {
+      // 假设该命令的 DisplayName 是 "发送短信"
+      // 关键参数是手机号和模板
+      return $"发送短信: {PhoneNumber} (模板: {TemplateId})";
+  }
+  ```
+- **注意**：如果 `ToString()` 返回空字符串或纯空格，活字格可能会显示默认的类名，但这通常不是最佳体验。确保返回值对非技术用户友好。
