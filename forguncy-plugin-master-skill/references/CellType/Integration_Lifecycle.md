@@ -52,10 +52,49 @@ onPageLoaded() {
 
 ### 4. destroy()
 **用途**: 页面跳转或销毁时调用。
-**推荐操作**: 解除全局事件绑定、销毁第三方控件实例。
+**重要性**: 凡是涉及到全局对象（如 `window`、`document`）的操作或定时器，**必须**在此方法中进行清理，否则会导致内存泄漏、性能下降或意外行为。
+
+#### 全局资源清理最佳实践
+在活字格环境中，单元格的销毁是频繁发生的。如果你在 `onPageLoaded` 中绑定了以下资源，请务必在 `destroy` 中释放：
+
+- **全局事件**: `window.addEventListener('resize', ...)` 或 `$(window).on('scroll', ...)`
+- **定时器**: `setInterval(...)` 或 `setTimeout(...)`
+- **第三方库实例**: 某些可视化库（如 D3, ECharts, Videx-Wellog）需要显式调用 `.destroy()` 或 `.dispose()` 方法。
+- **全局通知/订阅**: 消息总线或全局事件监听。
+
+**推荐代码模式**:
 ```javascript
-destroy() {
-    // 清理资源
+class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
+    onPageLoaded() {
+        // 保存引用以便清理
+        this._resizeHandler = this.onWindowResize.bind(this);
+        window.addEventListener('resize', this._resizeHandler);
+        
+        this._timer = setInterval(() => {
+            console.log("Running...");
+        }, 1000);
+    }
+
+    onWindowResize() {
+        // 处理逻辑
+    }
+
+    destroy() {
+        // 1. 移除全局监听
+        if (this._resizeHandler) {
+            window.removeEventListener('resize', this._resizeHandler);
+        }
+        // 2. 清除定时器
+        if (this._timer) {
+            clearInterval(this._timer);
+        }
+        // 3. 销毁第三方实例
+        if (this.chartInstance) {
+            this.chartInstance.destroy();
+        }
+        // 4. 调用基类
+        super.destroy();
+    }
 }
 ```
 

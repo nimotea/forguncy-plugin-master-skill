@@ -82,6 +82,18 @@ class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
         // 4. 返回 DOM 元素
         return container;
     }
+
+    onPageLoaded() {
+        // 页面加载完成后调用
+        // 建议在此处初始化依赖 DOM 的第三方库或绑定全局事件
+    }
+
+    destroy() {
+        // 单元格销毁时调用
+        // 重要：凡是涉及到 window/document 的事件绑定或定时器，必须在此处手动解绑/清除
+        // 示例：window.removeEventListener('resize', this._resizeHandler);
+        super.destroy();
+    }
 }
 
 // 注册单元格插件
