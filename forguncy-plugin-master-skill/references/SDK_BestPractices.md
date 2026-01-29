@@ -73,6 +73,38 @@
 - 手动分别修改 JSON 和 CSPROJ，导致不一致。
 - 发布了新功能但忘记修改 Version，导致用户无法更新。
 
+### 3. 前端运行时日志埋点规范
+
+在插件渲染（`onRender`）或执行（`execute`）过程中，应包含关键节点的日志输出，以便于在生产环境中快速定位问题。
+
+- **统一前缀**：所有日志必须带有 `[PluginName]` 前缀。
+- **关键节点**：
+    - **入口点**：记录接收到的原始参数。
+    - **数据处理后**：记录转换后的渲染数据。
+    - **渲染完成**：记录最终挂载或库初始化的状态。
+- **性能控制**：生产环境建议仅保留错误和关键警告日志。
+
+```javascript
+// 示例：在单元格类型中埋点
+onRender(container, renderInfo) {
+    console.log("[MyPlugin]: Start rendering...", renderInfo);
+    
+    const data = this.processData(renderInfo.Value);
+    if (!data) {
+        console.warn("[MyPlugin]: Data is empty, skipping chart update.");
+        return;
+    }
+    console.log("[MyPlugin]: Processed data:", data);
+
+    try {
+        this.chart.update(data);
+        console.log("[MyPlugin]: Render complete.");
+    } catch (e) {
+        console.error("[MyPlugin]: Render failed!", e);
+    }
+}
+```
+
 ## 6. 属性默认值规范 (Property Default Values)
 
 在定义插件属性时，如果初始值不是该类型的默认值（如 `bool` 默认为 `false`，引用类型默认为 `null`），必须显式处理。

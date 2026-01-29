@@ -4,9 +4,20 @@
 class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
     createContent() {
         const cellType = this.CellElement.CellType;
+        console.log("[MyPlugin]: createContent started.", cellType);
+
         const container = $("<div></div>");
         container.text(cellType.MyOption || "Hello Forguncy");
+        
+        console.log("[MyPlugin]: createContent complete.");
         return container;
+    }
+
+    onRender(container, renderInfo) {
+        // 当单元格值发生变化时，活字格会调用此方法重新渲染
+        console.log("[MyPlugin]: onRender triggered.", renderInfo);
+        
+        // super.onRender(container, renderInfo); // 如果不需要默认行为，可以不调用 super
     }
 
     onPageLoaded() {
