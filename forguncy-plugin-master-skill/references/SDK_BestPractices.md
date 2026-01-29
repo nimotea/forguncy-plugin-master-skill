@@ -73,6 +73,28 @@
 - 手动分别修改 JSON 和 CSPROJ，导致不一致。
 - 发布了新功能但忘记修改 Version，导致用户无法更新。
 
-## 6. 其他建议
+## 6. 属性默认值规范 (Property Default Values)
+
+在定义插件属性时，如果初始值不是该类型的默认值（如 `bool` 默认为 `false`，引用类型默认为 `null`），必须显式处理。
+
+- **重要风险**：如果一个布尔属性的默认值设为 `true`，但没有添加 `[DefaultValue(true)]` 特性，活字格设计器在用户将其设置为 `false` 时可能无法正确识别出“非默认状态”，从而导致配置无法保存或丢失。
+- **强制规范**：
+    - 任何布尔属性如果初始值设为 `true`，**必须**同时添加 `[DefaultValue(true)]` 特性。
+    - 同样适用于其他非标准默认值的类型（如 `int` 默认为 `100`）。
+
+**正确示例**：
+```csharp
+[DisplayName("启用缓存")]
+[DefaultValue(true)] // 必须显式标注
+public bool EnableCache { get; set; } = true;
+```
+
+**错误示例**：
+```csharp
+[DisplayName("启用缓存")]
+public bool EnableCache { get; set; } = true; // 缺少 DefaultValueAttribute，会导致 False 状态无法保存
+```
+
+## 7. 其他建议
 - **异常处理**：不要吞掉异常。让错误适当地向上冒泡，以便活字格可以记录它们。
 - **日志记录**：利用活字格的日志记录机制（如果 SDK 暴露了的话）来记录调试信息。

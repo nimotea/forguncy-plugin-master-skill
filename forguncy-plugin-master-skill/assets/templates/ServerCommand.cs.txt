@@ -13,6 +13,10 @@ namespace MyPluginNamespace
         [FormulaProperty]
         public object SampleProperty { get; set; }
 
+        [DisplayName("启用调试模式")]
+        [DefaultValue(false)] // 规范：如果默认值为 true，必须标注 [DefaultValue(true)]，否则 False 状态无法保存
+        public bool EnableDebug { get; set; } = false;
+
         public async Task<ExecuteResult> ExecuteAsync(IServerCommandExecuteContext context)
         {
             try
