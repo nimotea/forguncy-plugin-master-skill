@@ -11,11 +11,21 @@
 ### 代码示例
 
 **1. 定义列表项类 (MyListItem)：**
+
+> **重要提示**：列表项类**必须**同时满足以下两个条件：
+> 1. 继承 `ObjectPropertyBase`（提供对象的基础序列化能力）。
+> 2. 实现 `INamedObject` 接口（必须显式定义 `public string Name { get; set; }` 属性）。
+
 ```csharp
+using System.ComponentModel;
+using GrapeCity.Forguncy.Plugin;
+
+// 1. 必须继承 ObjectPropertyBase
+// 2. 必须实现 INamedObject 接口
 public class MyListItem : ObjectPropertyBase, INamedObject
 {
-    // INamedObject 接口要求实现 Name 属性
-    // 这个 Name 会作为列表项在左侧导航栏显示的名称
+    // INamedObject 接口强制要求实现 Name 属性
+    // 该属性的值将直接作为设计器中列表左侧导航栏的显示标题
     [DisplayName("名称")]
     public string Name { get; set; }
 

@@ -9,6 +9,8 @@
 ## 基础用法 ([ObjectListProperty])
 列表项类型必须实现 `INamedObject` 接口（用于显示列表项名称）。
 
+> **关键点**：实现 `INamedObject` 接口意味着你**必须**在类中定义一个 `public string Name { get; set; }` 属性。
+
 ```csharp
 public class MyPluginCellType : CellType
 {
@@ -16,10 +18,11 @@ public class MyPluginCellType : CellType
     public List<INamedObject> Columns { get; set; } = new List<INamedObject>();
 }
 
+// 必须继承 ObjectPropertyBase 并实现 INamedObject
 public class ColumnConfig : ObjectPropertyBase, INamedObject
 {
     [DisplayName("列名")]
-    public string Name { get; set; } // 实现 INamedObject
+    public string Name { get; set; } // 必须显式定义此属性以满足接口要求
     
     [DisplayName("宽度")]
     public int Width { get; set; }
