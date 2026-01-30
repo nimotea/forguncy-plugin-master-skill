@@ -1,6 +1,12 @@
 /// <reference path="../Declarations/forguncy.d.ts" />
 /// <reference path="../Declarations/forguncy.Plugin.d.ts" />
 
+// 最佳实践：定义与 C# Enum 对应的 JS 常量对象，避免魔法数字
+// const MyEnumType = {
+//     OptionA: 0,
+//     OptionB: 1
+// };
+
 class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
     /**
      * 创建单元格内容
@@ -13,6 +19,9 @@ class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
         const container = $("<div></div>");
         container.text(cellType.MyOption || "Hello Forguncy");
         
+        // 示例：使用 Enum 对象进行分支判断
+        // if (cellType.Type === MyEnumType.OptionA) { ... }
+
         console.log("[MyPlugin]: createContent complete.");
         return container;
     }

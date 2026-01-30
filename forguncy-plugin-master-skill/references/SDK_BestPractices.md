@@ -73,7 +73,7 @@
 - 手动分别修改 JSON 和 CSPROJ，导致不一致。
 - 发布了新功能但忘记修改 Version，导致用户无法更新。
 
-### 3. 前端运行时日志埋点规范
+## 6. 前端运行时日志埋点规范
 
 在插件渲染（`onRender`）或执行（`execute`）过程中，应包含关键节点的日志输出，以便于在生产环境中快速定位问题。
 
@@ -98,6 +98,57 @@ onRender(container, renderInfo) {
 
     try {
         this.chart.update(data);
+    } catch (e) {
+        console.error("[MyPlugin]: Chart update failed:", e);
+    }
+}
+```
+
+## 7. C# 与 JS 枚举同步 (Enum Synchronization)
+
+当插件在 C# 端使用 `enum` 定义配置项，而在 JS 端需要根据这些值进行逻辑分发时，**严禁使用魔法数字 (Magic Numbers)**。
+
+- **痛点**：C# 枚举的默认序列化结果是整数（0, 1, 2...）。如果 C# 端枚举顺序调整或插入新项，JS 端硬编码的数字将全部失效且难以排查。
+- **最佳实践**：在 JS 代码顶部显式定义一个与 C# 枚举结构一致的常量对象，并在逻辑中使用该对象。
+
+### 推荐模式
+
+**C# 端定义：**
+```csharp
+public enum ChartType
+{
+    Bar = 0,
+    Line = 1,
+    Pie = 2
+}
+```
+
+**JS 端实现：**
+```javascript
+// 1. 定义映射对象（作为常量）
+const ChartType = {
+    Bar: 0,
+    Line: 1,
+    Pie: 2
+};
+
+// 2. 在逻辑中使用常量，而非数字
+class MyPlugin extends Forguncy.Plugin.CellTypeBase {
+    createContent() {
+        // this.CellElement.CellType.ChartType 是从 C# 传来的整数
+        const type = this.CellElement.CellType.ChartType;
+
+        switch (type) {
+            case ChartType.Bar:  // ✅ 可读性强，易于维护
+                return this.renderBar();
+            case ChartType.Line:
+                return this.renderLine();
+            default:
+                console.warn(`Unknown chart type: ${type}`);
+        }
+    }
+}
+```
         console.log("[MyPlugin]: Render complete.");
     } catch (e) {
         console.error("[MyPlugin]: Render failed!", e);
