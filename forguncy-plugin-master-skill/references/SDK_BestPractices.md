@@ -333,4 +333,146 @@ createContent() {
     }
     ```
 
-    > **注意**：这种写法可能会引发代码分析器的默认值不一致警告，请忽略该警告，这是为了业务逻辑闭环而做的必要 Hack。
+336→    > **注意**：这种写法可能会引发代码分析器的默认值不一致警告，请忽略该警告，这是为了业务逻辑闭环而做的必要 Hack。
+337→
+338→## 10. 第三方库集成：数据处理管道 (Data Pipelines)
+339→
+340→在集成如 ECharts, G2, Spreadsheet 等需要特定数据格式的库时，数据转换往往是 Bug 的高发区。
+341→
+342→-   **痛点**：初始化时编写了复杂的 `mapping` 逻辑，但在后续通过 `Command` 或 `onRender` 更新数据时，AI 容易直接传递原始 JSON，导致第三方库因为格式不匹配而报错或静默更新失败。
+343→-   **核心原则**：**逻辑复用**。将“数据源 -> 视图模型”的转换逻辑提取为独立的纯函数（Pure Function）。
+344→
+345→### 推荐模式
+346→
+347→```javascript
+348→class MyChartCellType extends Forguncy.Plugin.CellTypeBase {
+349→    // 1. 提取转换管道
+350→    transformData(rawData) {
+351→        if (!rawData) return [];
+352→        return rawData.map(item => ({
+353→            category: item.Type,
+354→            amount: item.Value
+355→        }));
+356→    }
+357→
+358→    onRender(container, renderInfo) {
+359→        // 2. 初始化/全量更新时使用
+360→        const chartData = this.transformData(renderInfo.Value);
+361→        this.chart.source(chartData);
+362→    }
+363→
+364→    updateData(newData) {
+365→        // 3. 局部更新逻辑务必经过相同的管道
+366→        const chartData = this.transformData(newData);
+367→        this.chart.changeData(chartData);
+368→    }
+369→}
+370→```
+371→
+372→-   **检查清单**：
+373→    -   [ ] 初始化代码中是否有数据转换？
+374→    -   [ ] 更新代码（`updateData`, `onRender`, `onCommand`）是否复用了该转换？
+375→    -   [ ] 转换逻辑是否已提取为独立方法？
+376→
+377→## 11. 预设配置 (Preset) 模式：提升复杂组件易用性
+378→
+379→当插件包含大量嵌套配置（如多轨道、多曲线、多坐标轴）时，要求用户从原子项开始逐个配置会导致极高的上手门槛和出错率。
+380→
+381→-   **核心思路**：引入“业务宏”的概念。在属性设计上提供一个“预设”下拉框，用户选择后，代码内部自动展开为对应的底层原子配置。
+382→
+383→### 实现模式 (以多曲线轨道为例)
+384→
+385→#### 1. 设计器端 (C#) 定义业务语义属性
+386→
+387→```csharp
+388→public enum TrackPreset {
+389→    Custom,      // 用户手动配置
+390→    Lithology,   // 岩性轨道 (预设包含：GR, CALI 曲线)
+391→    Resistivity  // 电阻率轨道 (预设包含：RDEP, RMED 曲线)
+392→}
+393→
+394→[DisplayName("轨道预设")]
+395→[ComboProperty]
+396→public TrackPreset Preset { get; set; }
+397→```
+398→
+399→#### 2. Web端 (JS) 实现逻辑展开
+400→
+401→```javascript
+402→class WellogCellType extends Forguncy.Plugin.CellTypeBase {
+403→    // 内部方法：获取实际运行的原子配置
+404→    getEffectiveConfig() {
+405→        const settings = this.CellElement.CellType;
+406→        
+407→        // 如果是预设模式，返回硬编码的业务组合
+408→        if (settings.Preset === "Lithology") {
+409→            return {
+410→                tracks: [{
+411→                    name: "Lithology",
+412→                    plots: [{ type: "line", field: "GR", color: "red" }, { type: "line", field: "CALI", color: "blue" }]
+413→                }]
+414→            };
+415→        }
+416→        
+417→        // 否则返回用户手动定义的配置
+418→        return settings.CustomConfig;
+419→    }
+420→
+421→    onRender(container, renderInfo) {
+422→        const config = this.getEffectiveConfig();
+423→        this.initLibrary(config);
+424→    }
+425→}
+426→```
+427→
+428→-   **优点**：
+429→    -   **降低门槛**：业务人员只需选择“岩性轨道”，无需理解什么是 `Plot` 或 `Line`。
+430→    -   **减少错误**：预设配置经过验证，避免了颜色、比例尺等技术参数配错。
+431→    -   **平滑迁移**：保留 `Custom` 选项，允许高级用户在需要时进行精细化调整。
+432→
+433→## 12. 默认值管理一致性：单一真相来源 (SSOT)
+434→
+435→在插件开发中，默认值（如默认颜色、默认轨道配置）往往需要在 C#（设计器端显示）和 JS（运行时渲染）中同时存在。
+436→
+437→-   **现状痛点**：两端分别硬编码 `defaultColor = "red"`。一旦需要修改，必须两处同步，极易遗漏。
+438→-   **推荐方案**：由 C# 掌控默认值，JS 动态获取。
+439→
+440→### 实现模式：C# 序列化传递
+441→
+442→#### 1. C# 端定义常量与初始化
+443→
+444→```csharp
+445→public class MyPluginCellType : CellType {
+446→    // 1. 定义唯一的默认值常量 (或从 JSON 文件读取)
+447→    private const string DEFAULT_TRACK_CONFIG = "[{\"name\": \"Default\", \"color\": \"#FF0000\"}]";
+448→
+449→    // 2. 在构造函数中应用默认值
+450→    public MyPluginCellType() {
+451→        this.TrackConfigs = DEFAULT_TRACK_CONFIG;
+452→    }
+453→
+454→    [DisplayName("轨道配置")]
+455→    public string TrackConfigs { get; set; }
+456→}
+457→```
+458→
+459→#### 2. JS 端动态读取 (无硬编码)
+460→
+461→```javascript
+462→class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
+463→    onRender(container, renderInfo) {
+464→        // 直接从 CellType 获取值，如果为空则说明 C# 构造函数没跑（理论上不会）
+465→        // 严禁在此处写：const config = settings.TrackConfigs || "[{...}]";
+466→        const configStr = this.CellElement.CellType.TrackConfigs;
+467→        const config = JSON.parse(configStr);
+468→        
+469→        this.renderChart(config);
+470→    }
+471→}
+472→```
+473→
+474→-   **核心优势**：
+475→    -   **修改点唯一**：只需要在 C# 端修改一次，前后端同步生效。
+476→    -   **配置透明**：用户在设计器中能看到默认值，而不是看到一个“空”但在运行时却有东西。
+477→    -   **减少 Bug**：消除了由于两端逻辑版本不一致导致的渲染异常。
+478→

@@ -20,9 +20,22 @@ namespace MyPluginNamespace
         {
             // 返回在客户端执行的 JavaScript 代码
             // 可以使用 Forguncy.Page 等客户端 API
+            // 建议：增加对 TargetCell 为空的防御性校验
             return $@"
-                var msg = '{Message}';
-                alert(msg);
+                var page = Forguncy.Page;
+                var cell = page.getCell('{Message}'); // 假设 Message 是单元格名称
+
+                if (cell) {{
+                    var cellType = cell.getCellType();
+                    // 检查是否为预期的 CellType 实例，并调用其自定义方法
+                    if (cellType && typeof cellType.updateData === 'function') {{
+                        cellType.updateData({{ status: 'command_triggered', time: new Date() }});
+                    }} else {{
+                        console.warn('Target cell is not the expected type or updateData method is missing.');
+                    }}
+                }} else {{
+                    console.error('Target cell not found: {Message}');
+                }}
             ";
         }
     }

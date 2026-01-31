@@ -1,136 +1,39 @@
-# 活字格 (Forguncy) 插件开发标准作业程序 (SOP)
+# 活字格插件开发标准作业程序 (SOP) —— 简洁版
 
-本 SOP 旨在为开发者提供一套标准化的活字格插件开发流程，确保插件的质量、稳定性和可维护性。
+本 SOP 旨在提供高效、标准化的开发流程，确保插件的“简洁与安全”。
 
-## 阶段一：环境准备与项目初始化
+## 阶段一：环境与初始化 (Setup)
+1. **环境检查**：安装 .NET SDK (6.0+) 及活字格设计器。
+2. **项目创建**：运行 `scripts/InitProject.ps1`。
+3. **产出**：获取包含 `.csproj` 和基础代码的项目结构。
 
-**目标**：建立可运行的开发环境和基础项目结构。
+## 阶段二：需求分析与计划 (Planning)
+1. **创建计划**：在 `plans/` 下创建 `序号_需求描述.md`。
+2. **内容要求**：
+   - **分析**：明确目标。
+   - **引用**：必须链接至 `references/` 中的规范文档。
+   - **设计**：规划属性与核心逻辑。
+3. **确认**：用户确认计划后方可开始编码。
 
-1.  **环境检查**：
-    *   确保已安装 .NET SDK (建议 .NET 6.0 或更高)。
-    *   确保已安装活字格设计器 (用于调试和打包)。
-    *   确保已安装 "活字格插件构建器" (推荐) 或具备手动配置 `.csproj` 的能力。
+## 阶段三：定义与属性设计 (Design)
+1. **类型决策**：参考 `Decision_Tree.md`。
+2. **属性定义**：
+   - 遵循 `Unified_Properties.md`。
+   - 必须使用 `[DisplayName]`。
+   - 布尔值默认 True 时必须加 `[DefaultValue(true)]`。
+3. **极简 API**：严禁暴露内部参数，优先内部推导。
 
-2.  **项目初始化**：
-    *   **推荐方式**：使用 `InitProject.ps1` 脚本调用官方构建器。
-    *   **操作**：运行初始化脚本 -> 在构建器 GUI 中填写插件信息 (ID, 名称, 版本) -> 生成项目文件。
-    *   **产出**：包含 `.csproj` 和基础 `.cs` 文件的项目目录。
+## 阶段四：核心实现 (Implementation)
+1. **服务端 (C#)**：
+   - 数据库：强制使用 `this.Context.DataAccess` + 参数化查询。
+   - 日志：使用 `this.Context.Logger`，禁止 `Console.WriteLine`。
+2. **前端 (JS)**：
+   - **同步约束**：生命周期方法严禁 `async`。
+   - **逻辑复用**：提取数据转换纯函数，确保 `onRender` 与 `updateData` 一致。
+   - **埋点**：带有 `[PluginName]` 前缀的日志记录。
 
-## 阶段二：需求分析与计划 (覆盖所有任务)
-
-**目标**：在编码前明确设计方案，确保引用正确，无论是新开发还是整改。
-
-1.  **编写计划文档**：
-    *   **位置与命名**：
-        *   在项目根目录创建 `plans/` 文件夹（如不存在）。
-        *   使用有意义的文件名，推荐格式：`plans/序号_需求描述.md` (如 `plans/001_InitProject.md`)。
-    *   **内容结构**：
-        *   **需求分析**：明确插件要解决的问题或整改目标。
-        *   **模板/文件选择**：指定使用的代码模板或要修改的源文件。
-        *   **文档引用 (关键)**：列出参考的规范文档。**必须使用相对路径链接**，例如 `[异常处理](../docs/references/ServerCommand/Process_Exception_Handling.md)` (注意从 plans 目录出发的相对路径)。
-        *   **详细设计**：规划属性、方法及逻辑变更点。
-
-2.  **用户确认与锁定**：
-    *   提交计划文档给用户审核。
-    *   **锁定上下文**：一旦用户确认，后续开发**必须**严格基于此文档执行，不得随意偏离。
-
-## 阶段三：插件定义与属性设计 (实施)
-
-**目标**：将设计转化为代码中的属性定义。
-
-1.  **确定插件类型**：
-    *   **服务端命令 (ServerCommand)**：用于后端逻辑、数据库交互。
-    *   **单元格类型 (CellType)**：用于自定义前端 UI、图表。
-        *   **注意**：明确区分 **设计器端** (C# 代码，负责属性配置与WPF预览) 与 **Web端/查看端** (JS 代码，负责浏览器渲染) 的需求。
-    *   **客户端命令 (ClientCommand)**：用于前端页面跳转、交互。
-    *   **服务端 API (ServerAPI)**：用于对外提供 HTTP 接口。
-
-2.  **属性定义**：
-    *   在主类中添加公共属性。
-    *   使用 `[DisplayName("中文显示名")]` 标记属性。
-    *   根据需要添加 `[FormulaProperty]` (支持公式)、`[ComboProperty]` (下拉框) 等特性。
-    *   **参考文档**：`docs/references/<Type>/Add_Property_*.md`
-
-3.  **设计器行为 (可选)**：
-    *   实现 `GetDesignerPropertyEditorSettings` 以自定义编辑器。
-    *   实现 `Validate` 方法以在设计时检查配置错误。
-
-## 阶段四：核心逻辑实现
-
-**目标**：实现插件的运行时功能。
-
-1.  **服务端逻辑 (ServerCommand/ServerAPI)**：
-    *   重写 `Execute` 方法。
-    *   **数据库操作**：使用 `this.Context.DataAccess` (严禁 `new SqlConnection`)。
-    *   **参数获取**：解析传入的属性值 (处理公式计算结果)。
-    *   **异常处理**：使用 `try-catch` 捕获异常，并返回明确的错误信息。
-    *   **日志记录**：使用 `this.Context.Logger` (严禁 `Console.WriteLine`)。
-
-2.  **前端逻辑 (CellType/ClientCommand)**：
-    *   编写 JavaScript 代码实现 UI 渲染或交互。
-    *   **资源引用**：使用 `GetTemplateGlobalJavaScript` 引入第三方库。
-    *   **数据交互**：使用 `Forguncy.Page` API 获取/设置单元格值。
-
-## 阶段五：构建与测试
-
-**目标**：生成插件包并验证功能。
-
-1.78→1.  **构建**：
-79→    *   使用 Visual Studio 或 `dotnet build` 编译项目。
-80→    *   **自动打包说明**：如果项目 `.csproj` 中已配置 `ForguncyPluginPackageTool` 的 PostBuild 事件（即构建后自动运行打包工具），则执行 `dotnet build` 成功后会自动在输出目录生成 `.zip` 插件包，**无需额外手动打包**。
-81→    *   若未配置自动打包，则需使用活字格构建器手动打包生成 `.zip` 文件。
-
-2.  **安装测试**：
-    *   在活字格设计器中安装生成的插件。
-    *   创建一个测试页面，拖入插件或调用命令。
-    *   运行应用，验证功能是否符合预期。
-    *   检查控制台 (前端 F12) 或服务器日志是否有错误。
-
-## 阶段六：发布与维护
-
-**目标**：交付最终产物并进行后续维护。
-
-1.  **元数据配置 (关键)**：
-    *   发布前务必完善插件信息（图标、描述、作者、版本）。
-    *   **详细指南**：参见 `references/Project_Configuration/Plugin_Metadata.md`。
-    *   **操作**：直接修改 `.csproj` 文件中的 `<PropertyGroup>` 节点，设置 `<Description>`, `<Authors>`, `<Version>`, `<PackageIcon>` 等属性。
-
-2.  **代码维护与重构 (维护场景)**：
-    *   **目标**：针对现有代码进行 API 升级、迁移或逻辑优化。
-    *   **常规维护**：
-        1.  **定位引用**：使用 `grep` 或 `Find in Files` 全局搜索旧 API 或关键类名（如 `IGenerateContext`）。
-        2.  **小步修改**：每次只修改一个文件或一个方法，避免大规模破坏。
-        3.  **验证**：修改后立即编译 (`dotnet build`) 并运行单元测试（如有）或手动测试。
-    *   **结构性重构 (拆分聚合命令)**：
-        *   当需要将一个包含复杂 `switch-case` 逻辑的“聚合命令”拆分为多个独立命令时：
-        1.  **参考指南**：详细步骤请查阅 `references/Refactoring/Aggregated_Command_Split.md`。
-        2.  **分析结构**：识别用于分发的 `Enum` 和所有公共属性。
-        3.  **提取基类**：创建抽象基类 (Base Class)，承载公共属性和逻辑。
-        4.  **拆分子类**：为每个 Case 创建独立子类，迁移对应逻辑。
-        5.  **迁移定义**：务必确保共享的 `Enum` 被移动到公共位置，避免丢失。
-    *   **示例 (API 迁移)**：
-        *   查找：`grep -r "IGenerateContext" .`
-        *   替换：将 `IGenerateContext` 替换为 `IServerCommandExecuteContext`，并同步修改方法签名为 `ExecuteAsync`。
-        *   验证：编译通过，功能正常。
-
-3.  **文档编写**：
-    *   编写插件使用说明书，解释各属性的作用和使用示例。
-
-4.  **版本管理**：
-    *   每次更新前修改 `.csproj` 中的 `<Version>` 标签。
-    *   遵循语义化版本规范 (X.Y.Z)。
-
-## 阶段七：环境迁移与修复 (Troubleshooting)
-
-**目标**：解决因更换开发环境（如更换电脑、升级设计器版本）导致的引用丢失或构建错误。
-
-1.  **环境修复协议**：
-    *   **现象**：`dotnet build` 报错，提示找不到 Forguncy 程序集，或 `.csproj` 中的 `HintPath` 指向错误的路径。
-    *   **原则**：
-        *   **精确引用**：`.csproj` 中的 `<HintPath>` 必须指向具体的 `.dll` 文件（如 `...\bin\GrapeCity.Forguncy.ServerApi.dll`），**严禁**仅指向目录（如 `...\bin\`）。MSBuild 无法识别目录类型的 HintPath。
-        *   **自动化修复**：优先使用脚本修复路径，避免手动修改带来的拼写错误。
-    *   **操作步骤**：
-        1.  找到当前环境的活字格安装目录（通常包含 `Website\bin` 或 `DesignerBin`）。
-        2.  运行项目中的 `scripts/update_references.ps1` 脚本。
-        3.  命令示例：`.\scripts\update_references.ps1 -TargetForguncyPath "C:\Program Files\Forguncy"`。
-        4.  脚本会自动扫描 `.csproj` 文件，根据 `<Reference Include="...">` 的程序集名称，自动在目标目录中寻找对应的 DLL，并修正 `HintPath` 为绝对文件路径。
+## 阶段五：构建、测试与维护 (Maintenance)
+1. **构建**：`dotnet build`。若配置了 `ForguncyPluginPackageTool`，构建成功即自动打包。
+2. **验证**：在设计器安装并测试功能，检查 F12 控制台日志。
+3. **重构**：删除类文件后必须清理 `PluginConfig.json` 中的无效引用。
+4. **修复**：若引用丢失，运行 `scripts/update_references.ps1`。

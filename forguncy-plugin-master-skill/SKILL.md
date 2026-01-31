@@ -16,9 +16,11 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 - 用户需要修复现有插件代码中的错误或进行优化。
 
 ## 知识库与标准流程
+- **指导原则**：`references/Guiding_Principles.md` (简洁安全，避免过度设计的核心准则)
 - **核心索引**：`references/DOC_INDEX.md` (所有开发任务的入口，AI 必须优先检索此文件)
 - **标准作业程序 (SOP)**：`references/SOP.md` (定义了插件开发的五个标准阶段)
 - **最佳实践**：`references/SDK_BestPractices.md` (包含 IGenerateContext、DataAccess 和参数安全的关键规则)
+- **统一属性指南**：`references/Unified_Properties.md` (聚合的属性定义参考)
 
 ## 关键编码规范 (Critical Coding Standards)
 以下规则必须严格遵守，违反将导致插件不稳定或安全漏洞：
@@ -41,10 +43,25 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
     - 凡是支持变量绑定的属性，**必须**标记 `[FormulaProperty]` 且类型设为 `object`。
     - 运行时**必须**使用 `EvaluateFormulaAsync` 解析，**严禁**手动解析 `"{...}"` 字符串。
 
-5.  **环境依赖与构建修复 (Critical Protocol)**：
+5.  **配置一致性 (Configuration Consistency)**：
+    - **必须规则**：在进行重构、重命名或删除插件组件（Command, CellType, ServerAPI 等）操作后，**必须**同步检查并更新 `PluginConfig.json`。
+    - **工具保障**：优先使用 `validate_plugin_config` 工具校验配置与代码的一致性。
+    - **防御性检查**：如果删除了某个类文件，务必确认 `PluginConfig.json` 中不再包含对该类的引用，否则会导致活字格加载插件失败。
+
+6.  **环境依赖与构建修复 (Critical Protocol)**：
     - **触发条件**：当遇到 `dotnet build` 失败、Assembly 引用丢失 (如 `GrapeCity.Forguncy.ServerApi` 找不到)、路径错误 (如 `ForguncyPluginPackageTool` 不存在) 或调试启动失败 (`launchSettings.json` 路径无效) 时。
     - **禁止行为**：**绝对禁止** AI 尝试使用 `ls`, `dir`, `Get-ChildItem` 等命令扫描用户硬盘 (如 `E:\`, `C:\Program Files`) 来寻找安装路径。**绝对禁止** 猜测路径。
     - **必须行为 (STOP & ASK)**：必须立即**停止**所有后续操作，直接向用户提问：“检测到活字格设计器路径缺失或不匹配。请提供您当前电脑上活字格设计器的安装路径（例如 `C:\Program Files\Forguncy\ForguncyDesigner`）。”
+
+7.  **简洁安全原则 (Simplicity & Safety)**：
+    - **极简 API**：严禁暴露内部技术参数，仅保留业务语义属性。
+    - **逻辑复用**：强制提取数据转换管道函数，确保 `onRender` 与 `updateData` 逻辑一致。
+    - **同步生命周期**：JS 生命周期方法（如 `createContent`）**绝对禁止**声明为 `async`。
+    - **安全数据访问**：必须使用参数化查询，严禁 SQL 拼接。
+
+8.  **避免过度设计 (No Over-engineering)**：
+    - 优先使用活字格内置功能。
+    - 保持工程结构扁平，避免不必要的抽象层。
 
 ## 指令
 
@@ -135,7 +152,7 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
     - **中文规范**：插件展示侧（如 `[DisplayName]`, `[Description]`, `[Category]` 等属性值）**必须使用中文**，严禁使用纯英文作为插件名称或描述，以符合国内用户使用习惯。
 
 ### 6. 环境修复协议 (Environment Repair Protocol)
-- **核心原则**：严格遵守 **Critical Coding Standards #5**。当且仅当用户明确提供路径时，才执行路径更新。**严禁** AI 自行猜测或在未询问用户的情况下尝试“修复”路径。
+- **核心原则**：严格遵守 **Critical Coding Standards #6**。当且仅当用户明确提供路径时，才执行路径更新。**严禁** AI 自行猜测或在未询问用户的情况下尝试“修复”路径。
 - **触发场景**：
     - 用户反馈“更换了电脑”、“升级了活字格版本”。
     - 执行 `dotnet build` 或打包命令时报错，提示找不到 `ForguncyPluginPackageTool` 或 DLL 引用丢失。
