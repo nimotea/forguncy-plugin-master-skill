@@ -119,3 +119,18 @@
 4.  **版本管理**：
     *   每次更新前修改 `.csproj` 中的 `<Version>` 标签。
     *   遵循语义化版本规范 (X.Y.Z)。
+
+## 阶段七：环境迁移与修复 (Troubleshooting)
+
+**目标**：解决因更换开发环境（如更换电脑、升级设计器版本）导致的引用丢失或构建错误。
+
+1.  **环境修复协议**：
+    *   **现象**：`dotnet build` 报错，提示找不到 Forguncy 程序集，或 `.csproj` 中的 `HintPath` 指向错误的路径。
+    *   **原则**：
+        *   **精确引用**：`.csproj` 中的 `<HintPath>` 必须指向具体的 `.dll` 文件（如 `...\bin\GrapeCity.Forguncy.ServerApi.dll`），**严禁**仅指向目录（如 `...\bin\`）。MSBuild 无法识别目录类型的 HintPath。
+        *   **自动化修复**：优先使用脚本修复路径，避免手动修改带来的拼写错误。
+    *   **操作步骤**：
+        1.  找到当前环境的活字格安装目录（通常包含 `Website\bin` 或 `DesignerBin`）。
+        2.  运行项目中的 `scripts/update_references.ps1` 脚本。
+        3.  命令示例：`.\scripts\update_references.ps1 -TargetForguncyPath "C:\Program Files\Forguncy"`。
+        4.  脚本会自动扫描 `.csproj` 文件，根据 `<Reference Include="...">` 的程序集名称，自动在目标目录中寻找对应的 DLL，并修正 `HintPath` 为绝对文件路径。
