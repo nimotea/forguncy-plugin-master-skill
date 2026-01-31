@@ -1,0 +1,9 @@
+{
+  "name": "forguncy-plugin-master-skill",
+  "version": "1.0.0",
+  "description": "Forguncy Plugin Master Skill Documentation",
+  "private": true,
+  "files": [
+    "**/*"
+  ]
+}

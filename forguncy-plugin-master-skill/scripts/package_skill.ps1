@@ -30,11 +30,18 @@ try {
     exit 1
 }
 
-# Run the python script
-# Output to the parent directory of the skill root to avoid packaging the package itself if run recursively (though logic handles excludes)
-# Or just output to current dir.
-# Let's output to the skill root's parent to simulate a "build" artifact.
-$OutputDir = Split-Path -Parent $SkillRoot
+# Define output directory (build folder at repo root)
+$OutputDir = Join-Path (Split-Path -Parent $SkillRoot) "build"
 
-Write-Host "Packaging skill..."
-python $PythonScript $SkillRoot $OutputDir
+Write-Host "Building skill to: $OutputDir"
+
+# Run the python script to build the folder structure
+python $PythonScript $SkillRoot --output $OutputDir --format folder
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Build completed successfully."
+    Write-Host "You can now link this build using: npm link $OutputDir"
+} else {
+    Write-Error "Build failed."
+    exit $LASTEXITCODE
+}
