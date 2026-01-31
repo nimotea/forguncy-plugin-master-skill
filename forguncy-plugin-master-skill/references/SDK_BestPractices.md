@@ -333,244 +333,244 @@ createContent() {
     }
     ```
 
-336→    > **注意**：这种写法可能会引发代码分析器的默认值不一致警告，请忽略该警告，这是为了业务逻辑闭环而做的必要 Hack。
-337→
-338→## 10. 第三方库集成：数据处理管道 (Data Pipelines)
-339→
-340→在集成如 ECharts, G2, Spreadsheet 等需要特定数据格式的库时，数据转换往往是 Bug 的高发区。
-341→
-342→-   **痛点**：初始化时编写了复杂的 `mapping` 逻辑，但在后续通过 `Command` 或 `onRender` 更新数据时，AI 容易直接传递原始 JSON，导致第三方库因为格式不匹配而报错或静默更新失败。
-343→-   **核心原则**：**逻辑复用**。将“数据源 -> 视图模型”的转换逻辑提取为独立的纯函数（Pure Function）。
-344→
-345→### 推荐模式
-346→
-347→```javascript
-348→class MyChartCellType extends Forguncy.Plugin.CellTypeBase {
-349→    // 1. 提取转换管道
-350→    transformData(rawData) {
-351→        if (!rawData) return [];
-352→        return rawData.map(item => ({
-353→            category: item.Type,
-354→            amount: item.Value
-355→        }));
-356→    }
-357→
-358→    onRender(container, renderInfo) {
-359→        // 2. 初始化/全量更新时使用
-360→        const chartData = this.transformData(renderInfo.Value);
-361→        this.chart.source(chartData);
-362→    }
-363→
-364→    updateData(newData) {
-365→        // 3. 局部更新逻辑务必经过相同的管道
-366→        const chartData = this.transformData(newData);
-367→        this.chart.changeData(chartData);
-368→    }
-369→}
-370→```
-371→
-372→-   **检查清单**：
-373→    -   [ ] 初始化代码中是否有数据转换？
-374→    -   [ ] 更新代码（`updateData`, `onRender`, `onCommand`）是否复用了该转换？
-375→    -   [ ] 转换逻辑是否已提取为独立方法？
-376→
-377→## 11. 预设配置 (Preset) 模式：提升复杂组件易用性
-378→
-379→当插件包含大量嵌套配置（如多轨道、多曲线、多坐标轴）时，要求用户从原子项开始逐个配置会导致极高的上手门槛和出错率。
-380→
-381→-   **核心思路**：引入“业务宏”的概念。在属性设计上提供一个“预设”下拉框，用户选择后，代码内部自动展开为对应的底层原子配置。
-382→
-383→### 实现模式 (以多曲线轨道为例)
-384→
-385→#### 1. 设计器端 (C#) 定义业务语义属性
-386→
-387→```csharp
-388→public enum TrackPreset {
-389→    Custom,      // 用户手动配置
-390→    Lithology,   // 岩性轨道 (预设包含：GR, CALI 曲线)
-391→    Resistivity  // 电阻率轨道 (预设包含：RDEP, RMED 曲线)
-392→}
-393→
-394→[DisplayName("轨道预设")]
-395→[ComboProperty]
-396→public TrackPreset Preset { get; set; }
-397→```
-398→
-399→#### 2. Web端 (JS) 实现逻辑展开
-400→
-401→```javascript
-402→class WellogCellType extends Forguncy.Plugin.CellTypeBase {
-403→    // 内部方法：获取实际运行的原子配置
-404→    getEffectiveConfig() {
-405→        const settings = this.CellElement.CellType;
-406→        
-407→        // 如果是预设模式，返回硬编码的业务组合
-408→        if (settings.Preset === "Lithology") {
-409→            return {
-410→                tracks: [{
-411→                    name: "Lithology",
-412→                    plots: [{ type: "line", field: "GR", color: "red" }, { type: "line", field: "CALI", color: "blue" }]
-413→                }]
-414→            };
-415→        }
-416→        
-417→        // 否则返回用户手动定义的配置
-418→        return settings.CustomConfig;
-419→    }
-420→
-421→    onRender(container, renderInfo) {
-422→        const config = this.getEffectiveConfig();
-423→        this.initLibrary(config);
-424→    }
-425→}
-426→```
-427→
-428→-   **优点**：
-429→    -   **降低门槛**：业务人员只需选择“岩性轨道”，无需理解什么是 `Plot` 或 `Line`。
-430→    -   **减少错误**：预设配置经过验证，避免了颜色、比例尺等技术参数配错。
-431→    -   **平滑迁移**：保留 `Custom` 选项，允许高级用户在需要时进行精细化调整。
-432→
-433→## 12. 默认值管理一致性：单一真相来源 (SSOT)
-434→
-435→在插件开发中，默认值（如默认颜色、默认轨道配置）往往需要在 C#（设计器端显示）和 JS（运行时渲染）中同时存在。
-436→
-437→-   **现状痛点**：两端分别硬编码 `defaultColor = "red"`。一旦需要修改，必须两处同步，极易遗漏。
-438→-   **推荐方案**：由 C# 掌控默认值，JS 动态获取。
-439→
-440→### 实现模式：C# 序列化传递
-441→
-442→#### 1. C# 端定义常量与初始化
-443→
-444→```csharp
-445→public class MyPluginCellType : CellType {
-446→    // 1. 定义唯一的默认值常量 (或从 JSON 文件读取)
-447→    private const string DEFAULT_TRACK_CONFIG = "[{\"name\": \"Default\", \"color\": \"#FF0000\"}]";
-448→
-449→    // 2. 在构造函数中应用默认值
-450→    public MyPluginCellType() {
-451→        this.TrackConfigs = DEFAULT_TRACK_CONFIG;
-452→    }
-453→
-454→    [DisplayName("轨道配置")]
-455→    public string TrackConfigs { get; set; }
-456→}
-457→```
-458→
-459→#### 2. JS 端动态读取 (无硬编码)
-460→
-461→```javascript
-462→class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
-463→    onRender(container, renderInfo) {
-464→        // 直接从 CellType 获取值，如果为空则说明 C# 构造函数没跑（理论上不会）
-465→        // 严禁在此处写：const config = settings.TrackConfigs || "[{...}]";
-466→        const configStr = this.CellElement.CellType.TrackConfigs;
-467→        const config = JSON.parse(configStr);
-468→        
-469→        this.renderChart(config);
-470→    }
-471→}
-472→```
-473→
-474→-   **核心优势**：
-475→    -   **修改点唯一**：只需要在 C# 端修改一次，前后端同步生效。
-476→    -   **配置透明**：用户在设计器中能看到默认值，而不是看到一个“空”但在运行时却有东西。
-477→    -   **减少 Bug**：消除了由于两端逻辑版本不一致导致的渲染异常。
-478→
-479→## 13. 交互幂等性 (Idempotency)：防止状态叠加与内存泄漏
-480→
-481→在实现 `RunTimeMethod` 或 `updateData` 时，频繁触发的调用可能导致重复的 DOM 操作或库初始化。
-482→
-483→-   **核心风险**：某些第三方库（如 `videx-wellog`）的 `reset()` 或 `setTracks()` 并不总是完全覆盖，可能存在资源释放不彻底或节点累加的问题。
-484→-   **解决方案**：在执行逻辑前，先对比“旧值”与“新值”。
-485→
-486→### 实现模式：值对比守卫
-487→
-488→```javascript
-489→class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
-490→    constructor() {
-491→        super();
-492→        this._lastDataJson = null; // 存储上一次渲染的数据快照
-493→    }
-494→
-495→    updateData(newData) {
-496→        const currentDataJson = JSON.stringify(newData);
-497→        
-498→        // 1. 幂等性检查：如果数据没变，直接返回
-499→        if (this._lastDataJson === currentDataJson) {
-500→            console.log("[MyPlugin]: Data unchanged, skipping update.");
-501→            return;
-502→        }
-503→
-504→        // 2. 执行昂贵的更新操作
-505→        this.performHeavyUpdate(newData);
-506→        
-507→        // 3. 更新快照
-508→        this._lastDataJson = currentDataJson;
-509→    }
-510→
-511→    performHeavyUpdate(data) {
-512→        this._container.empty(); // 彻底清理
-513→        this.initLibrary(data);
-514→    }
-515→}
-516→```
-517→
-518→-   **适用场景**：
-519→    -   **重置/重载逻辑**：避免用户快速连点或公式高频计算导致的性能崩塌。
-520→    -   **复杂 DOM 操作**：防止生成重复的子元素。
-521→    -   **昂贵计算**：如大数据量转换、3D 渲染初始化。
-522→
-523→## 14. 大型插件的代码组织规范：物理拆分与有序加载
-524→
-525→当插件功能变得复杂时，单文件（God File）会导致维护成本指数级上升。活字格支持加载多个 JS 文件，我们可以利用这一点实现简单的模块化。
-526→
-527→-   **推荐结构**：
-528→    -   `Constants.js`：定义全局常量、枚举。
-529→    -   `Utils.js`：通用工具函数（如数据转换、格式化）。
-530→    -   `Core.js` / `Factory.js`：核心业务逻辑或组件工厂。
-531→    -   `Main.js`：继承自 `CellTypeBase` 或 `CommandBase` 的入口类。
-532→
-533→### 实现模式：有序加载 (Ordered Loading)
-534→
-535→由于活字格插件环境不支持 ES Modules (import/export)，各文件通过全局变量（或挂载在插件命名空间下）进行通信。
-536→
-537→#### 1. 定义命名空间 (Constants.js)
-538→
-539→```javascript
-540→// 推荐使用插件 ID 作为命名空间，防止全局污染
-541→var MyPlugin = MyPlugin || {};
-542→MyPlugin.Constants = {
-543→    DEFAULT_COLOR: "red"
-544→};
-545→```
-546→
-547→#### 2. 实现入口逻辑 (Main.js)
-548→
-549→```javascript
-550→class MyCellType extends Forguncy.Plugin.CellTypeBase {
-551→    onRender(container, renderInfo) {
-552→        // 使用在 Constants.js 中定义的常量
-553→        console.log(MyPlugin.Constants.DEFAULT_COLOR);
-554→    }
-555→}
-556→```
-557→
-558→#### 3. 配置加载顺序 (PluginConfig.json)
-559→
-560→**关键点**：`javascript` 数组中的顺序即为浏览器加载顺序。被依赖的文件必须排在前面。
-561→
-562→```json
-563→{
-564→    "javascript": [
-565→        "Scripts/Constants.js",
-566→        "Scripts/Utils.js",
-567→        "Scripts/Main.js"
-568→    ]
-569→}
-570→```
-571→
-572→-   **优势**：
-573→    -   **职责清晰**：开发者可以快速定位到是工具类问题还是业务逻辑问题。
-574→    -   **多人协作**：不同开发者可以负责不同的物理文件，减少 Git 冲突。
-575→    -   **按需加载**：虽然目前活字格是一次性加载，但物理拆分为未来的按需打包打下了基础。
-576→
+    > **注意**：这种写法可能会引发代码分析器的默认值不一致警告，请忽略该警告，这是为了业务逻辑闭环而做的必要 Hack。
+
+## 10. 第三方库集成：数据处理管道 (Data Pipelines)
+
+在集成如 ECharts, G2, Spreadsheet 等需要特定数据格式的库时，数据转换往往是 Bug 的高发区。
+
+-   **痛点**：初始化时编写了复杂的 `mapping` 逻辑，但在后续通过 `Command` 或 `onRender` 更新数据时，AI 容易直接传递原始 JSON，导致第三方库因为格式不匹配而报错或静默更新失败。
+-   **核心原则**：**逻辑复用**。将“数据源 -> 视图模型”的转换逻辑提取为独立的纯函数（Pure Function）。
+
+### 推荐模式
+
+```javascript
+class MyChartCellType extends Forguncy.Plugin.CellTypeBase {
+    // 1. 提取转换管道
+    transformData(rawData) {
+        if (!rawData) return [];
+        return rawData.map(item => ({
+            category: item.Type,
+            amount: item.Value
+        }));
+    }
+
+    onRender(container, renderInfo) {
+        // 2. 初始化/全量更新时使用
+        const chartData = this.transformData(renderInfo.Value);
+        this.chart.source(chartData);
+    }
+
+    updateData(newData) {
+        // 3. 局部更新逻辑务必经过相同的管道
+        const chartData = this.transformData(newData);
+        this.chart.changeData(chartData);
+    }
+}
+```
+
+-   **检查清单**：
+    -   [ ] 初始化代码中是否有数据转换？
+    -   [ ] 更新代码（`updateData`, `onRender`, `onCommand`）是否复用了该转换？
+    -   [ ] 转换逻辑是否已提取为独立方法？
+
+## 11. 预设配置 (Preset) 模式：提升复杂组件易用性
+
+当插件包含大量嵌套配置（如多轨道、多曲线、多坐标轴）时，要求用户从原子项开始逐个配置会导致极高的上手门槛和出错率。
+
+-   **核心思路**：引入“业务宏”的概念。在属性设计上提供一个“预设”下拉框，用户选择后，代码内部自动展开为对应的底层原子配置。
+
+### 实现模式 (以多曲线轨道为例)
+
+#### 1. 设计器端 (C#) 定义业务语义属性
+
+```csharp
+public enum TrackPreset {
+    Custom,      // 用户手动配置
+    Lithology,   // 岩性轨道 (预设包含：GR, CALI 曲线)
+    Resistivity  // 电阻率轨道 (预设包含：RDEP, RMED 曲线)
+}
+
+[DisplayName("轨道预设")]
+[ComboProperty]
+public TrackPreset Preset { get; set; }
+```
+
+#### 2. Web端 (JS) 实现逻辑展开
+
+```javascript
+class WellogCellType extends Forguncy.Plugin.CellTypeBase {
+    // 内部方法：获取实际运行的原子配置
+    getEffectiveConfig() {
+        const settings = this.CellElement.CellType;
+        
+        // 如果是预设模式，返回硬编码的业务组合
+        if (settings.Preset === "Lithology") {
+            return {
+                tracks: [{
+                    name: "Lithology",
+                    plots: [{ type: "line", field: "GR", color: "red" }, { type: "line", field: "CALI", color: "blue" }]
+                }]
+            };
+        }
+        
+        // 否则返回用户手动定义的配置
+        return settings.CustomConfig;
+    }
+
+    onRender(container, renderInfo) {
+        const config = this.getEffectiveConfig();
+        this.initLibrary(config);
+    }
+}
+```
+
+-   **优点**：
+    -   **降低门槛**：业务人员只需选择“岩性轨道”，无需理解什么是 `Plot` 或 `Line`。
+    -   **减少错误**：预设配置经过验证，避免了颜色、比例尺等技术参数配错。
+    -   **平滑迁移**：保留 `Custom` 选项，允许高级用户在需要时进行精细化调整。
+
+## 12. 默认值 management 一致性：单一真相来源 (SSOT)
+
+在插件开发中，默认值（如默认颜色、默认轨道配置）往往需要在 C#（设计器端显示）和 JS（运行时渲染）中同时存在。
+
+-   **现状痛点**：两端分别硬编码 `defaultColor = "red"`。一旦需要修改，必须两处同步，极易遗漏。
+-   **推荐方案**：由 C# 掌控默认值，JS 动态获取。
+
+### 实现模式：C# 序列化传递
+
+#### 1. C# 端定义常量与初始化
+
+```csharp
+public class MyPluginCellType : CellType {
+    // 1. 定义唯一的默认值常量 (或从 JSON 文件读取)
+    private const string DEFAULT_TRACK_CONFIG = "[{\"name\": \"Default\", \"color\": \"#FF0000\"}]";
+
+    // 2. 在构造函数中应用默认值
+    public MyPluginCellType() {
+        this.TrackConfigs = DEFAULT_TRACK_CONFIG;
+    }
+
+    [DisplayName("轨道配置")]
+    public string TrackConfigs { get; set; }
+}
+```
+
+#### 2. JS 端动态读取 (无硬编码)
+
+```javascript
+class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
+    onRender(container, renderInfo) {
+        // 直接从 CellType 获取值，如果为空则说明 C# 构造函数没跑（理论上不会）
+        // 严禁在此处写：const config = settings.TrackConfigs || "[{...}]";
+        const configStr = this.CellElement.CellType.TrackConfigs;
+        const config = JSON.parse(configStr);
+        
+        this.renderChart(config);
+    }
+}
+```
+
+-   **核心优势**：
+    -   **修改点唯一**：只需要在 C# 端修改一次，前后端同步生效。
+    -   **配置透明**：用户在设计器中能看到默认值，而不是看到一个“空”但在运行时却有东西。
+    -   **减少 Bug**：消除了由于两端逻辑版本不一致导致的渲染异常。
+
+## 13. 交互幂等性 (Idempotency)：防止状态叠加与内存泄漏
+
+在实现 `RunTimeMethod` 或 `updateData` 时，频繁触发的调用可能导致重复的 DOM 操作或库初始化。
+
+-   **核心风险**：某些第三方库（如 `videx-wellog`）的 `reset()` 或 `setTracks()` 并不总是完全覆盖，可能存在资源释放不彻底或节点累加的问题。
+-   **解决方案**：在执行逻辑前，先对比“旧值”与“新值”。
+
+### 实现模式：值对比守卫
+
+```javascript
+class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
+    constructor() {
+        super();
+        this._lastDataJson = null; // 存储上一次渲染的数据快照
+    }
+
+    updateData(newData) {
+        const currentDataJson = JSON.stringify(newData);
+        
+        // 1. 幂等性检查：如果数据没变，直接返回
+        if (this._lastDataJson === currentDataJson) {
+            console.log("[MyPlugin]: Data unchanged, skipping update.");
+            return;
+        }
+
+        // 2. 执行昂贵的更新操作
+        this.performHeavyUpdate(newData);
+        
+        // 3. 更新快照
+        this._lastDataJson = currentDataJson;
+    }
+
+    performHeavyUpdate(data) {
+        this._container.empty(); // 彻底清理
+        this.initLibrary(data);
+    }
+}
+```
+
+-   **适用场景**：
+    -   **重置/重载逻辑**：避免用户快速连点或公式高频计算导致的性能崩塌。
+    -   **复杂 DOM 操作**：防止生成重复的子元素。
+    -   **昂贵计算**：如大数据量转换、3D 渲染初始化。
+
+## 14. 大型插件的代码组织规范：物理拆分与有序加载
+
+当插件功能变得复杂时，单文件（God File）会导致维护成本指数级上升。活字格支持加载多个 JS 文件，我们可以利用这一点实现简单的模块化。
+
+-   **推荐结构**：
+    -   `Constants.js`：定义全局常量、枚举。
+    -   `Utils.js`：通用工具函数（如数据转换、格式化）。
+    -   `Core.js` / `Factory.js`：核心业务逻辑或组件工厂。
+    -   `Main.js`：继承自 `CellTypeBase` 或 `CommandBase` 的入口类。
+
+### 实现模式：有序加载 (Ordered Loading)
+
+由于活字格插件环境不支持 ES Modules (import/export)，各文件通过全局变量（或挂载在插件命名空间下）进行通信。
+
+#### 1. 定义命名空间 (Constants.js)
+
+```javascript
+// 推荐使用插件 ID 作为命名空间，防止全局污染
+var MyPlugin = MyPlugin || {};
+MyPlugin.Constants = {
+    DEFAULT_COLOR: "red"
+};
+```
+
+#### 2. 实现入口逻辑 (Main.js)
+
+```javascript
+class MyCellType extends Forguncy.Plugin.CellTypeBase {
+    onRender(container, renderInfo) {
+        // 使用在 Constants.js 中定义的常量
+        console.log(MyPlugin.Constants.DEFAULT_COLOR);
+    }
+}
+```
+
+#### 3. 配置加载顺序 (PluginConfig.json)
+
+**关键点**：`javascript` 数组中的顺序即为浏览器加载顺序。被依赖的文件必须排在前面。
+
+```json
+{
+    "javascript": [
+        "Scripts/Constants.js",
+        "Scripts/Utils.js",
+        "Scripts/Main.js"
+    ]
+}
+```
+
+-   **优势**：
+    -   **职责清晰**：开发者可以快速定位到是工具类问题还是业务逻辑问题。
+    -   **多人协作**：不同开发者可以负责不同的物理文件，减少 Git 冲突。
+    -   **按需加载**：虽然目前活字格是一次性加载，但物理拆分为未来的按需打包打下了基础。
+
