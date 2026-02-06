@@ -37,7 +37,7 @@
 
 ## 阶段五：构建与维护 (Build & Maintenance)
 1. **构建**：直接执行 `dotnet build`。
-   - **注意**：仅需编译通过即可，无需关注或操作 `.fcp` 文件。
+   - **注意**：仅需编译通过即可。
 2. **验证**：在设计器安装并测试功能，检查 F12 控制台日志。
 3. **代码维护 (Refactoring)**：
    - **API 迁移**：使用 `grep` 或 `Find` 定位旧接口（如 `IGenerateContext`），进行小步替换与验证。
@@ -50,5 +50,5 @@
    - **同步**：检查 `PluginConfig.json` 确保插件 ID/名称与市场信息一致；从 `README.md` 提取最新的功能描述。
    - **生成**：填充模板中的占位符（包括版本、作者、截图链接），确保文档符合葡萄城市场规范。
 2. **最终打包**：
-   - 执行 `dotnet build -c Release`。
+   - 执行 `dotnet build`。
    - 交付物为 `bin/Release/net6.0/` 目录下的 zip 包。
