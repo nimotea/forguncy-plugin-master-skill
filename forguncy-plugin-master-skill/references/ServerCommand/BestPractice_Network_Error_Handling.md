@@ -62,6 +62,39 @@ catch (HttpRequestException ex)
 }
 ```
 
+### 3.3 陷阱警示：预检请求与版本协商 (Pre-flight Checks)
+在执行核心业务前进行版本检查（CheckVersion）或健康检查（HealthCheck）时，**严禁**使用宽泛的 `try-catch` 吞没网络错误。
+
+**错误示范**（会导致“无法连接”被误报为“版本过低”）：
+```csharp
+try {
+    var version = await CheckVersionAsync(); // 如果这里连接失败抛出异常
+    if (version < RequiredVersion) throw new Exception("版本过低");
+}
+catch {
+    // 错误！所有异常（包括网络中断）都会被视为版本不匹配
+    throw new Exception("服务端版本过低，请升级。"); 
+}
+```
+
+**正确示范**：
+```csharp
+try {
+    var version = await CheckVersionAsync();
+    if (version < RequiredVersion) 
+    {
+        // 明确的逻辑不匹配
+        throw new Exception($"服务端版本过低 (当前: {version}, 需要: {RequiredVersion})。请升级服务。");
+    }
+}
+catch (HttpRequestException ex)
+{
+    // 明确的连接失败
+    throw new Exception("无法连接到版本检查接口，请检查网络设置。", ex);
+}
+// 其他异常正常冒泡或单独处理
+```
+
 ## 4. 常见异常对照表
 
 | 异常类型                              | 常见原因               | 建议提示文案                                              |

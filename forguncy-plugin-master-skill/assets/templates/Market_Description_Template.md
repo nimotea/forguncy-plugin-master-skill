@@ -53,5 +53,3 @@
 - **技术支持**: {联系方式或 GitHub 链接}
 
 ---
-
-_本文档由 [Funguncy-Plugin-Builder] 自动生成模板协助编写_
