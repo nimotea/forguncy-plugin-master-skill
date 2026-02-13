@@ -654,3 +654,83 @@ public enum PricingMode
 -   **用户侧**：用户可以在服务端命令设计器中，先拖入 `创建订单`，然后加一个 `发送邮件` (活字格内置命令)，再拖入 `支付订单`。这种灵活性是“上帝命令”无法提供的。
 
 **记住：插件开发者的职责是提供“积木”，而不是搭建“城堡”。让用户（低代码开发者）去决定城堡的样子。**
+
+## 16. 内建表日期处理 (Date/Time Handling from Built-in Tables)
+
+在服务端命令中处理来自活字格**内建表 (Built-in Table)** 的数据时，日期字段的底层存储格式与常规认知不同，极易引发运行时错误。
+
+-   **风险警示 (Warning)**：
+    -   内建表的日期字段在底层（以及 `Dictionary<string, object>` 结果中）存储为 **Double (OADate)** 类型，而非 `DateTime`。
+    -   **错误做法**：直接强转 `(DateTime)val` 或使用 `token.Value<DateTime>()`。这会导致 `InvalidCastException` 或 JSON 解析错误。
+
+-   **最佳实践**：
+    -   使用兼容性辅助方法来解析日期，同时处理 OADate、DateTime 对象和字符串。
+
+### 推荐辅助函数
+
+建议将此方法添加为 `PluginHelper` 或 `CommonUtils` 类中的静态方法：
+
+```csharp
+/// <summary>
+/// 安全转换日期（兼容活字格内建表 OADate 格式）
+/// </summary>
+/// <param name="val">输入值 (可能是 double, DateTime, string, JValue)</param>
+/// <returns>DateTime 对象，转换失败返回 DateTime.MinValue 或 null</returns>
+public static DateTime SafeParseDateTime(object val)
+{
+    if (val == null || val == DBNull.Value) return DateTime.MinValue;
+
+    // 1. 直接是 DateTime
+    if (val is DateTime dt) return dt;
+
+    // 2. 处理 OADate (内建表存储格式为 double)
+    if (val is double d) 
+    {
+        return DateTime.FromOADate(d);
+    }
+    
+    // 3. 处理 Newtonsoft.Json JValue
+    if (val is Newtonsoft.Json.Linq.JValue jv)
+    {
+        if (jv.Type == Newtonsoft.Json.Linq.JTokenType.Date) 
+            return jv.Value<DateTime>();
+        
+        // 关键：Json.NET 可能将 OADate 解析为 Float 或 Integer
+        if (jv.Type == Newtonsoft.Json.Linq.JTokenType.Float || jv.Type == Newtonsoft.Json.Linq.JTokenType.Integer) 
+            return DateTime.FromOADate(jv.Value<double>());
+    }
+
+    // 4. 字符串尝试解析 (兼容 "2023-01-01" 等标准格式)
+    if (DateTime.TryParse(val.ToString(), out var result))
+    {
+        return result;
+    }
+
+    // 5. 兜底返回
+    return DateTime.MinValue;
+}
+```
+
+### 使用示例
+
+```csharp
+public override ExecuteResult Execute(IServerCommandExecuteContext dataContext)
+{
+    // 假设从内建表查询结果中获取
+    var row = dataContext.DataAccess.ExecuteScalar("SELECT StartDate FROM MyTable WHERE ID=1");
+    
+    // ❌ 错误：直接强转，如果 row 是 double 会崩溃
+    // var date = (DateTime)row; 
+
+    // ✅ 正确：使用安全转换
+    var date = SafeParseDateTime(row);
+    
+    if (date == DateTime.MinValue)
+    {
+        return ExecuteResult.CreateError("无效的日期格式");
+    }
+    
+    // ...
+}
+```
+
