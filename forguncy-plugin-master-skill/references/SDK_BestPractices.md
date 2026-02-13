@@ -513,97 +513,102 @@ class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
 
 在实现 `RunTimeMethod` 或 `updateData` 时，频繁触发的调用可能导致重复的 DOM 操作或库初始化。
 
--   **核心风险**：某些第三方库（如 `videx-wellog`）的 `reset()` 或 `setTracks()` 并不总是完全覆盖，可能存在资源释放不彻底或节点累加的问题。
--   **解决方案**：在执行逻辑前，先对比“旧值”与“新值”。
+## 14. 策略模式 (Strategy Pattern)与业务逻辑分离
 
-### 实现模式：值对比守卫
+在开发复杂的服务端命令插件时，随着业务规则的增加，`Execute` 方法往往会变得臃肿且难以维护。为了保持代码的清晰和可测试性，推荐使用策略模式将“命令包装逻辑”与“核心业务逻辑”分离。
 
-```javascript
-class MyPluginCellType extends Forguncy.Plugin.CellTypeBase {
-    constructor() {
-        super();
-        this._lastDataJson = null; // 存储上一次渲染的数据快照
+- **命令包装 (Command Wrapper)**: 负责解析参数、获取上下文 (Context)、参数校验、错误处理。
+- **业务逻辑 (Domain Logic)**: 负责具体的算法实现或数据处理，应尽量保持纯净，不直接依赖 `IServerCommandExecuteContext`。
+
+### 代码示范
+
+#### 1. 定义策略接口
+
+```csharp
+// 业务逻辑接口，输入输出纯净，不依赖 Forguncy SDK
+public interface IPricingStrategy
+{
+    decimal Calculate(decimal basePrice, int quantity);
+}
+```
+
+#### 2. 实现具体策略
+
+```csharp
+public class NormalPricingStrategy : IPricingStrategy
+{
+    public decimal Calculate(decimal basePrice, int quantity)
+    {
+        return basePrice * quantity;
     }
+}
 
-    updateData(newData) {
-        const currentDataJson = JSON.stringify(newData);
-        
-        // 1. 幂等性检查：如果数据没变，直接返回
-        if (this._lastDataJson === currentDataJson) {
-            console.log("[MyPlugin]: Data unchanged, skipping update.");
-            return;
+public class DiscountPricingStrategy : IPricingStrategy
+{
+    public decimal Calculate(decimal basePrice, int quantity)
+    {
+        // 满 10 件打 8 折
+        if (quantity >= 10) return basePrice * quantity * 0.8m;
+        return basePrice * quantity;
+    }
+}
+```
+
+#### 3. 命令类 (Context & Client)
+
+```csharp
+public class CalculatePriceCommand : ServerCommand
+{
+    [DisplayName("基础价格")]
+    public double BasePrice { get; set; }
+
+    [DisplayName("数量")]
+    public int Quantity { get; set; }
+
+    [DisplayName("计算模式")]
+    public PricingMode Mode { get; set; } // Enum: Normal, Discount
+
+    [DisplayName("结果保存变量")]
+    public string ResultVariable { get; set; }
+
+    public override ExecuteResult Execute(IServerCommandExecuteContext dataContext)
+    {
+        // 1. 准备数据 (Command Wrapper 职责)
+        var price = (decimal)this.BasePrice;
+        var qty = this.Quantity;
+
+        // 2. 选择策略 (Strategy Selection)
+        IPricingStrategy strategy;
+        switch (this.Mode)
+        {
+            case PricingMode.Discount:
+                strategy = new DiscountPricingStrategy();
+                break;
+            case PricingMode.Normal:
+            default:
+                strategy = new NormalPricingStrategy();
+                break;
         }
 
-        // 2. 执行昂贵的更新操作
-        this.performHeavyUpdate(newData);
-        
-        // 3. 更新快照
-        this._lastDataJson = currentDataJson;
-    }
+        // 3. 执行业务逻辑 (Domain Logic Execution)
+        // 注意：这里没有把 dataContext 传给 strategy，保持了业务逻辑的独立性
+        var result = strategy.Calculate(price, qty);
 
-    performHeavyUpdate(data) {
-        this._container.empty(); // 彻底清理
-        this.initLibrary(data);
+        // 4. 处理结果 (Command Wrapper 职责)
+        dataContext.SetVariableValue(this.ResultVariable, result);
+
+        return ExecuteResult.CreateSuccess();
     }
 }
-```
 
--   **适用场景**：
-    -   **重置/重载逻辑**：避免用户快速连点或公式高频计算导致的性能崩塌。
-    -   **复杂 DOM 操作**：防止生成重复的子元素。
-    -   **昂贵计算**：如大数据量转换、3D 渲染初始化。
-
-## 14. 大型插件的代码组织规范：物理拆分与有序加载
-
-当插件功能变得复杂时，单文件（God File）会导致维护成本指数级上升。活字格支持加载多个 JS 文件，我们可以利用这一点实现简单的模块化。
-
--   **推荐结构**：
-    -   `Constants.js`：定义全局常量、枚举。
-    -   `Utils.js`：通用工具函数（如数据转换、格式化）。
-    -   `Core.js` / `Factory.js`：核心业务逻辑或组件工厂。
-    -   `Main.js`：继承自 `CellTypeBase` 或 `CommandBase` 的入口类。
-
-### 实现模式：有序加载 (Ordered Loading)
-
-由于活字格插件环境不支持 ES Modules (import/export)，各文件通过全局变量（或挂载在插件命名空间下）进行通信。
-
-#### 1. 定义命名空间 (Constants.js)
-
-```javascript
-// 推荐使用插件 ID 作为命名空间，防止全局污染
-var MyPlugin = MyPlugin || {};
-MyPlugin.Constants = {
-    DEFAULT_COLOR: "red"
-};
-```
-
-#### 2. 实现入口逻辑 (Main.js)
-
-```javascript
-class MyCellType extends Forguncy.Plugin.CellTypeBase {
-    onRender(container, renderInfo) {
-        // 使用在 Constants.js 中定义的常量
-        console.log(MyPlugin.Constants.DEFAULT_COLOR);
-    }
-}
-```
-
-#### 3. 配置加载顺序 (PluginConfig.json)
-
-**关键点**：`javascript` 数组中的顺序即为浏览器加载顺序。被依赖的文件必须排在前面。
-
-```json
+public enum PricingMode
 {
-    "javascript": [
-        "Scripts/Constants.js",
-        "Scripts/Utils.js",
-        "Scripts/Main.js"
-    ]
+    Normal,
+    Discount
 }
 ```
 
--   **优势**：
-    -   **职责清晰**：开发者可以快速定位到是工具类问题还是业务逻辑问题。
-    -   **多人协作**：不同开发者可以负责不同的物理文件，减少 Git 冲突。
-    -   **按需加载**：虽然目前活字格是一次性加载，但物理拆分为未来的按需打包打下了基础。
-
+### 优势
+1.  **可测试性**: `IPricingStrategy` 的实现类可以很容易地编写单元测试，无需模拟复杂的 `IServerCommandExecuteContext`。
+2.  **解耦**: 业务逻辑变更不影响命令的参数定义和结果回写逻辑。
+3.  **扩展性**: 新增计价模式只需增加一个新的策略类和枚举项，符合开闭原则 (OCP)。
