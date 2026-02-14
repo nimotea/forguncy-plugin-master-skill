@@ -73,8 +73,10 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 
 1.  **项目初始化器 (`scripts/init_project.ps1`)**：
     - 自动定位并启动“活字格插件构建器” GUI 工具。
-    - **交互增强**：支持在初始化过程中询问并自动生成插件 Logo。
-2.  **Logo 生成器 (`scripts/generate_logo.py`)**：
+    - 仅负责启动，不包含交互式配置。
+2.  **项目配置器 (`scripts/setup_project.ps1`)**：
+    - **交互增强**：支持在项目创建完成后，询问并自动生成插件 Logo、添加常用依赖。
+3.  **Logo 生成器 (`scripts/generate_logo.py`)**：
     - **用途**：为插件快速生成符合规范的 SVG 图标（用于代码）和 PNG 图标（用于元数据）。
     - **风险警示 (Critical)**：活字格设计器要求插件主图标（`PluginConfig.json` 中的 `image` 属性）必须为 **.png** 格式。生成的 `.svg` 文件仅适用于代码中的 `[Icon]` 特性。
     - **同步建议**：调用 `generate_logo.py` 时建议加上 `--sync` 参数，工具会自动识别并覆盖项目中的 `PluginLogo.png` 或 `Icon.png`，防止因文件名不一致（如大小写）导致引用丢失。

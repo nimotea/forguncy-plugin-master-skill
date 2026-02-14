@@ -4,8 +4,9 @@
 
 ## 阶段一：环境与初始化 (Setup)
 1. **环境检查**：安装 .NET SDK (6.0+) 及活字格设计器。
-2. **项目创建**：运行 `scripts/InitProject.ps1`。
-3. **产出**：获取包含 `.csproj` 和基础代码的项目结构。
+2. **项目创建**：运行 `scripts/init_project.ps1` 启动构建器。
+3. **项目配置**：用户确认创建完成后，运行 `scripts/setup_project.ps1` 配置 Logo 和依赖。
+4. **产出**：获取包含 `.csproj` 和基础代码的项目结构。
 
 ## 阶段二：需求分析与计划 (Planning)
 1. **工具盘点**：在开始前，检查 `scripts/` 目录下是否有可用的辅助工具（如 `generate_logo.py`）。

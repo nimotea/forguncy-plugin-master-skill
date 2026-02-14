@@ -56,63 +56,9 @@ try {
     # Try to start the builder with WorkingDirectory set
     Start-Process -FilePath $BuilderPath -WorkingDirectory $BuilderDir -ArgumentList "/name `"$ProjectName`"" -ErrorAction Stop
     
-    Write-Host "Builder started. Please complete the project creation in the GUI."
-    
-    # Logo Generation Prompt
-    Write-Host "`nDo you want to generate a professional plugin logo? (Y/N)" -ForegroundColor Yellow
-    $response = Read-Host
-    if ($response -eq 'Y' -or $response -eq 'y') {
-        Write-Host "Select logo icon type:"
-        Write-Host "1. Text only (Default)"
-        Write-Host "2. Gantt (Industrial/APS)"
-        Write-Host "3. Chart (Analytics/Reports)"
-        Write-Host "4. Database (Storage/Data)"
-        Write-Host "5. Gear (Tools/Processing)"
-        $typeIdx = Read-Host "Choice [1-5]"
-        $LogoType = switch ($typeIdx) {
-            "2" { "gantt" }
-            "3" { "chart" }
-            "4" { "db" }
-            "5" { "gear" }
-            Default { "text" }
-        }
-
-        $LogoText = Read-Host "Enter 2-3 characters for the logo (e.g. APS)"
-        if ([string]::IsNullOrWhiteSpace($LogoText)) { $LogoText = "FP" }
-        
-        $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-        $GenerateLogoScript = Join-Path $ScriptDir "generate_logo.py"
-        
-        # Assume the project is created in the current directory or a subfolder named $ProjectName
-        $TargetPath = Join-Path (Get-Location) $ProjectName
-        
-        if (Test-Path $GenerateLogoScript) {
-            # Use --sync to automatically overwrite existing logos
-            python $GenerateLogoScript $TargetPath --text $LogoText --type $LogoType --sync
-            Write-Host "Logos generated and synchronized in $ProjectName\Resources\" -ForegroundColor Green
-            
-            Write-Host "`n[Important] For PluginConfig.json (Main Icon), use:" -ForegroundColor Yellow
-            Write-Host "Resources/PluginLogo.png (or your custom name)" -ForegroundColor White
-            Write-Host "`n[Tip] For Command/CellType class [Icon] attribute, use:" -ForegroundColor Cyan
-            Write-Host "[Icon(""pack://application:,,,/$ProjectName;component/Resources/PluginLogo.png"")]" -ForegroundColor White
-        } else {
-            Write-Warning "Logo generation script not found."
-        }
-    }
-
-    Write-Host "`nDo you want to add common dependencies (Newtonsoft.Json)? (Y/N)" -ForegroundColor Yellow
-    $addJson = Read-Host
-    if ($addJson -eq 'Y' -or $addJson -eq 'y') {
-        $TargetPath = Join-Path (Get-Location) $ProjectName
-        if (Test-Path $TargetPath) {
-            Push-Location $TargetPath
-            dotnet add package Newtonsoft.Json
-            Pop-Location
-            Write-Host "Added Newtonsoft.Json to $ProjectName" -ForegroundColor Green
-        } else {
-            Write-Warning "Project folder $ProjectName not found. Please run 'dotnet add package Newtonsoft.Json' manually later."
-        }
-    }
+    Write-Host "Builder started." -ForegroundColor Green
+    Write-Host "1. Please complete the project creation in the GUI."
+    Write-Host "2. After the project is created, run 'scripts\setup_project.ps1' to configure Logo and Dependencies." -ForegroundColor Cyan
 }
 catch {
     Write-Error "Failed to start builder: $_"
