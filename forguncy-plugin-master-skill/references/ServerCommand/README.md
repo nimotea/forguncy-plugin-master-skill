@@ -20,6 +20,9 @@
     -   *编辑器*: [自定义编辑器](./Designer_Custom_Editor.md)
     -   *属性控制*: [校验](./Designer_Validation.md), [动态隐藏](./Designer_Dynamic_Visibility.md), [联动](./Designer_Property_Linkage.md)
 
+4.  **我要测试命令?** -> 查阅 **[测试与调试](#测试与调试-testing--debugging)**
+    -   *数据生成*: [Mock 数据工具](./Testing_MockData.md)
+
 ## 目录
 
 ### 快速查阅 (Quick Reference)
@@ -65,7 +68,9 @@
 - [数据库交互 (Database Interaction)](./Other_Database_Interaction.md)
 - [第三方网络服务交互 (Third-party Network Interaction)](./Other_ThirdParty_Network.md)
 - [服务端命令日志 (Server Command Log)](./Other_ServerCommand_Log.md)
-- [L1.5 调度逻辑数据格式 (L1.5 Scheduling Data Format)](./L1.5_Scheduling_Data_Format.md)
+
+### 测试与调试 (Testing & Debugging)
+- [测试数据生成 (Mock Data Generation)](./Testing_MockData.md)
 
 ## 待补充内容
 - `Command` 基类
