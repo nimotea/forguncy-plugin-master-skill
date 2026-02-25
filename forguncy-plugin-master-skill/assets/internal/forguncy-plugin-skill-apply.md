@@ -14,6 +14,10 @@
 2.  **误导指引 (Misleading)**：文档描述是否与实测不符？示例代码是否过时？
 3.  **工具缺失 (Tooling)**：本次是否手动执行了高频重复操作？是否应将其固化为 `scripts/` 下的新工具？
 
+## 🎯 特定场景规则 (Scenario Rules)
+若用户请求包含以下关键词，必须执行对应动作：
+1.  **“插件上架” (Plugin Listing)**：必须引导 AI 参考使用 `assets/templates/Market_Description_Template.md`，严禁自由发挥文案格式。
+
 ## 📋 强制反馈规范 (Mandatory Output)
 无论任务成败，**必须**在回复最后包含此模块。若无实质建议，必须明确写“无”。
 
