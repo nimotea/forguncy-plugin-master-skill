@@ -50,15 +50,25 @@ jobs:
 
           # 2. Clone the target repository
           # Using a temporary directory
-          git clone --depth 1 --branch $TARGET_BRANCH "https://oauth2:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git" target_repo || \
-          git clone --depth 1 "https://oauth2:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git" target_repo
+          git clone "https://oauth2:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git" target_repo
 
           cd target_repo
           
-          # If branch doesn't exist (cloned default), checkout -b
-          current_branch=$(git rev-parse --abbrev-ref HEAD)
-          if [ "$current_branch" != "$TARGET_BRANCH" ]; then
+          # Initialize if empty
+          if [ ! -d ".git" ] || [ -z "$(ls -A .)" ] || ! git rev-parse HEAD >/dev/null 2>&1; then
+            echo "Repository is empty. Initializing..."
+            git init
             git checkout -b $TARGET_BRANCH
+            # Create an empty commit to start the branch
+            git commit --allow-empty -m "Initial commit"
+            # Add remote if it was a fresh init (though clone usually adds it)
+            if ! git remote | grep -q origin; then
+                git remote add origin "https://oauth2:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git"
+            fi
+          else
+            # If not empty, ensure we are on target branch
+            git fetch origin
+            git checkout $TARGET_BRANCH || git checkout -b $TARGET_BRANCH
           fi
 
           # 3. Clean existing files (except .git) to ensure sync with build output
