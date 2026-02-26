@@ -40,7 +40,7 @@
    - **埋点**：带有 `[PluginName]` 前缀的日志记录。
 
 ## 阶段五：构建与维护 (Build & Maintenance)
-1. **构建**：在项目根目录执行 `dotnet build`（无参数）。
+1. **构建**：严格遵循 `references/Build_Standard.md`，在项目根目录执行 `dotnet build`（无参数）。
    - **注意**：默认生成 Debug 版本。
 2. **验证**：在设计器安装并测试功能，检查 F12 控制台日志。
 3. **代码维护 (Refactoring)**：
@@ -58,4 +58,4 @@
    - **生成**：填充模板中的占位符（包括版本、作者、截图链接），确保文档符合葡萄城市场规范。
 2. **最终打包**：
    - **执行**：运行 `dotnet build`（严禁添加 `-c Release`）。
-   - **交付**：取 `bin/Debug/net6.0/` 下的 zip 包。
+   - **交付**：取 `bin/Debug/<TargetFramework>/` 下的 zip 包。

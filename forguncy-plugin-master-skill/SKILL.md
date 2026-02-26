@@ -21,6 +21,7 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 - **标准作业程序 (SOP)**：`references/SOP.md` (定义了插件开发的五个标准阶段)
 - **最佳实践**：`references/SDK_BestPractices.md` (包含 IGenerateContext、DataAccess 和参数安全的关键规则)
 - **统一属性指南**：`references/Unified_Properties.md` (聚合的属性定义参考)
+- **构建标准**：`references/Build_Standard.md` (定义了唯一合法的构建命令与交付物规范)
 
 ## 🚫 基础设施合规性 (Infrastructure Compliance - ZERO TOLERANCE)
 **以下规则具有最高优先级，违反将视为重大事故：**
@@ -105,9 +106,8 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
 
 请严格遵循 `references/SOP.md` 定义的流程以及以下步骤来处理用户的请求：
 
-### 0. 知识检索与自检 (新增)
-- **外部检索**：在回答任何技术问题或生成代码前，**必须**首先查阅 `references/DOC_INDEX.md`，找到相关的详细文档路径，并阅读对应文档。
-- **内部自检**：若涉及 Skill 自身的维护（如更新文档、修改模板），请查阅 `assets/internal/skill-packaging-guide.md` 以了解 Skill 打包流程，但**严禁**向用户混淆此概念与插件构建。
+### 0. 知识检索 (新增)
+- 在回答任何技术问题或生成代码前，**必须**首先查阅 `references/DOC_INDEX.md`，找到相关的详细文档路径，并阅读对应文档。
 - 确保生成的代码符合文档中的最新规范。
 
 ### 1. 项目初始化判断 (高优先级 - 对应 SOP 阶段一)
@@ -210,17 +210,15 @@ description: 协助开发者初始化、编写和规范化活字格插件代码�
         - 修复完成后，建议用户重新执行之前的构建或调试命令。
 
 ### 7. 构建标准化 (Build Standardization)
-- **核心原则**：统一使用最简构建命令，通过配置文件管理构建行为。
-- **标准命令**：
-    - 仅执行：`dotnet build`
-    - **严禁**：附加任何参数（如 `-c`, `-o`, `-r`）。
-    - **严禁**：使用 `dotnet publish`, `dotnet pack`, `msbuild`。
-- **输出规范**：
-    - 默认输出路径：`bin/Debug/net6.0/`。
-    - 无需关注 Release 构建，统一交付 Debug 版本即可。
-- **故障处理**：
-    - 构建失败时，优先检查环境和代码引用。
-    - **严禁**尝试通过添加构建参数（如忽略警告、强制依赖）来绕过错误。
+- **核心原则**：所有构建行为必须严格遵循 `references/Build_Standard.md`。
+- **唯一合法命令**：
+    - `dotnet build` (严禁任何参数)
+- **交付物**：
+    - 统一使用 `bin/Debug/<TargetFramework>/` 下的产物。
+    - 根据 `.csproj` 动态判断（如 `net6.0`, `net8.0`）。
+- **故障排查**：
+    - 详见 `references/Build_Standard.md` 的故障排查章节。
+    - **严禁**尝试通过添加参数绕过错误。
 
 ## 示例
 

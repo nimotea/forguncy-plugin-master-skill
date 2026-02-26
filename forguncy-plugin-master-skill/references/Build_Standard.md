@@ -16,10 +16,11 @@ dotnet build
 ```
 
 ### 2.2 输出验证
-构建完成后，产物通常位于：
-- `bin/Debug/net6.0/` (默认)
+构建完成后，产物通常位于 `bin/Debug/<TargetFramework>/` 目录。
+- **TargetFramework**：取决于 `.csproj` 中的配置（常见为 `net6.0`, `net8.0`, `netstandard2.0` 等）。
+- **默认路径**：`bin/Debug/net6.0/` (对于大多数现代活字格插件)。
 
-**注意**：Agent 必须检查上述目录是否存在，以验证构建是否成功。
+**注意**：Agent 必须根据项目实际的 TargetFramework 动态推断并检查上述目录是否存在，以验证构建是否成功。
 
 ## 3. 禁止行为 (Forbidden Actions)
 1.  **禁止**使用 `dotnet publish`、`dotnet pack` 或 `msbuild`。
