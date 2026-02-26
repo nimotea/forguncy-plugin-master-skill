@@ -27,7 +27,7 @@ jobs:
       - name: Build Skill Distribution
         run: |
           # Package the 'forguncy-plugin-expert' skill to 'dist' directory
-          python scripts/package_skill.py forguncy-plugin-expert dist
+          python scripts/package_skill.py forguncy-plugin-expert -o dist
 
       - name: Deploy to Distribution Repository
         env:

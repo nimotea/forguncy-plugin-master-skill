@@ -3,7 +3,7 @@
 Skill Packager - Creates a distributable .skill file of a skill folder
 
 Usage:
-    python scripts/package_skill.py [skill_name_or_path] [output-directory]
+    python scripts/package_skill.py [skill_name_or_path] --output [output-directory]
 """
 
 import sys
