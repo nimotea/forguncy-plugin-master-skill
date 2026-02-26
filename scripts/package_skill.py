@@ -241,11 +241,13 @@ def package_skill(skill_input, output_dir=None, format='folder'):
             shutil.copy2(internal_rule_src, cursor_rules_dir / "skill-apply.mdc")
             print(f"  Generated: .cursor/rules/skill-apply.mdc")
             
-        # Copy scripts to output directory
+        # Copy scripts to output directory (inside the skill folder)
         scripts_src = repo_root / "scripts"
-        scripts_dst = output_path / "scripts"
+        # The target path should be inside the skill structure: dist/skills/{skill_name}/scripts
+        scripts_dst = target_skill_dir / "scripts"
+        
         if scripts_src.exists():
-            print(f"⚙️  Copying scripts from: {scripts_src}")
+            print(f"⚙️  Copying scripts to skill directory: {scripts_dst}")
             scripts_dst.mkdir(parents=True, exist_ok=True)
             for file in os.listdir(scripts_src):
                 if file.endswith('.ps1') or file.endswith('.py'):
