@@ -50,7 +50,8 @@ jobs:
 
           # 2. Clone the target repository
           # Using a temporary directory
-          git clone "https://oauth2:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git" target_repo
+          # Using X-ACCESS-TOKEN format (GitHub Actions friendly)
+          git clone "https://x-access-token:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git" target_repo
 
           cd target_repo
           
@@ -63,7 +64,7 @@ jobs:
             git commit --allow-empty -m "Initial commit"
             # Add remote if it was a fresh init (though clone usually adds it)
             if ! git remote | grep -q origin; then
-                git remote add origin "https://oauth2:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git"
+                git remote add origin "https://x-access-token:$API_TOKEN_GITHUB@github.com/$TARGET_REPOSITORY.git"
             fi
           else
             # If not empty, ensure we are on target branch
