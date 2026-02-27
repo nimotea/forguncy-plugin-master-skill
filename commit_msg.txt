@@ -1,0 +1,6 @@
+docs: update API Cheatsheet, SOP and logo script for better DX
+
+- Clarify static Logger usage in API_Cheatsheet.md
+- Add dependency pre-check step in SOP.md
+- Improve generate_logo.py debugging and argument parsing
+- Update SKILL.md with better script usage instructions

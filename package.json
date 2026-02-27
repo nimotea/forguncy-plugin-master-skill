@@ -1,6 +1,6 @@
 {
   "name": "forguncy-plugin-builder",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Builder project for Forguncy Plugin Skills",
   "scripts": {
     "build": "powershell -File scripts/package_skill.ps1",
